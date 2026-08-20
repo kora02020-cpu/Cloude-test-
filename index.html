@@ -3,38 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Todoリスト</title>
+<title>家計簿アプリ</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
-    <h1>Todoリスト</h1>
+    <h1>家計簿</h1>
 
-    <form id="todo-form" class="todo-form">
-      <input
-        type="text"
-        id="todo-input"
-        placeholder="タスクを入力..."
-        autocomplete="off"
-        maxlength="200"
-      >
-      <button type="submit">追加</button>
+    <section class="summary">
+      <div class="summary-card income">
+        <span class="summary-label">収入</span>
+        <span id="total-income" class="summary-value">¥0</span>
+      </div>
+      <div class="summary-card expense">
+        <span class="summary-label">支出</span>
+        <span id="total-expense" class="summary-value">¥0</span>
+      </div>
+      <div class="summary-card balance">
+        <span class="summary-label">収支</span>
+        <span id="total-balance" class="summary-value">¥0</span>
+      </div>
+    </section>
+
+    <div class="month-nav">
+      <button id="prev-month" type="button" aria-label="前の月">‹</button>
+      <span id="current-month"></span>
+      <button id="next-month" type="button" aria-label="次の月">›</button>
+    </div>
+
+    <form id="entry-form" class="entry-form">
+      <div class="type-toggle">
+        <button type="button" class="type-btn expense active" data-type="expense">支出</button>
+        <button type="button" class="type-btn income" data-type="income">収入</button>
+      </div>
+
+      <div class="form-row">
+        <input type="date" id="entry-date" required>
+        <select id="entry-category" required></select>
+      </div>
+
+      <div class="form-row">
+        <input
+          type="number"
+          id="entry-amount"
+          placeholder="金額"
+          min="0"
+          step="1"
+          inputmode="numeric"
+          required
+        >
+        <input
+          type="text"
+          id="entry-memo"
+          placeholder="メモ（任意）"
+          maxlength="100"
+          autocomplete="off"
+        >
+      </div>
+
+      <button type="submit" class="submit-btn">追加</button>
     </form>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">すべて</button>
-      <button class="filter-btn" data-filter="active">未完了</button>
-      <button class="filter-btn" data-filter="completed">完了済み</button>
-    </div>
+    <section class="breakdown" id="breakdown-section" hidden>
+      <h2>カテゴリ別支出</h2>
+      <ul id="breakdown-list" class="breakdown-list"></ul>
+    </section>
 
-    <ul id="todo-list" class="todo-list"></ul>
-
-    <p id="empty-message" class="empty-message" hidden>タスクはありません</p>
-
-    <div class="footer">
-      <span id="remaining-count">0件のタスク</span>
-      <button id="clear-completed" class="clear-btn">完了済みを削除</button>
-    </div>
+    <section class="entries">
+      <h2>明細</h2>
+      <ul id="entry-list" class="entry-list"></ul>
+      <p id="empty-message" class="empty-message" hidden>この月の記録はありません</p>
+    </section>
   </main>
 
   <script src="script.js"></script>
