@@ -3,39 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Todoリスト</title>
+<title>家計簿ダッシュボード</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="app">
-    <h1>Todoリスト</h1>
+  <div class="dashboard">
+    <header class="dashboard-header">
+      <h1>家計簿ダッシュボード</h1>
+      <div class="month-nav">
+        <button id="prev-month" type="button" aria-label="前の月">‹</button>
+        <span id="current-month"></span>
+        <button id="next-month" type="button" aria-label="次の月">›</button>
+      </div>
+    </header>
 
-    <form id="todo-form" class="todo-form">
-      <input
-        type="text"
-        id="todo-input"
-        placeholder="タスクを入力..."
-        autocomplete="off"
-        maxlength="200"
-      >
-      <button type="submit">追加</button>
-    </form>
+    <section class="stat-grid">
+      <div class="stat-card income">
+        <span class="stat-label">収入</span>
+        <span id="total-income" class="stat-value">¥0</span>
+      </div>
+      <div class="stat-card expense">
+        <span class="stat-label">支出</span>
+        <span id="total-expense" class="stat-value">¥0</span>
+      </div>
+      <div class="stat-card balance">
+        <span class="stat-label">収支</span>
+        <span id="total-balance" class="stat-value">¥0</span>
+      </div>
+      <div class="stat-card rate">
+        <span class="stat-label">貯蓄率</span>
+        <span id="savings-rate" class="stat-value">0%</span>
+      </div>
+    </section>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">すべて</button>
-      <button class="filter-btn" data-filter="active">未完了</button>
-      <button class="filter-btn" data-filter="completed">完了済み</button>
-    </div>
+    <section class="charts-grid">
+      <div class="panel chart-panel">
+        <h2>カテゴリ別支出</h2>
+        <div id="donut-empty" class="chart-empty" hidden>この月の支出はありません</div>
+        <div class="donut-wrap">
+          <svg id="donut-chart" viewBox="0 0 120 120" role="img" aria-label="カテゴリ別支出の割合"></svg>
+          <ul id="donut-legend" class="donut-legend"></ul>
+        </div>
+      </div>
 
-    <ul id="todo-list" class="todo-list"></ul>
+      <div class="panel chart-panel">
+        <h2>収支の推移(直近6ヶ月)</h2>
+        <svg id="trend-chart" viewBox="0 0 320 180" role="img" aria-label="直近6ヶ月の収支推移"></svg>
+        <div class="trend-legend">
+          <span class="legend-item"><i class="dot income"></i>収入</span>
+          <span class="legend-item"><i class="dot expense"></i>支出</span>
+        </div>
+      </div>
+    </section>
 
-    <p id="empty-message" class="empty-message" hidden>タスクはありません</p>
+    <section class="main-grid">
+      <div class="panel form-panel">
+        <h2>記録を追加</h2>
+        <form id="entry-form" class="entry-form">
+          <div class="type-toggle">
+            <button type="button" class="type-btn expense active" data-type="expense">支出</button>
+            <button type="button" class="type-btn income" data-type="income">収入</button>
+          </div>
 
-    <div class="footer">
-      <span id="remaining-count">0件のタスク</span>
-      <button id="clear-completed" class="clear-btn">完了済みを削除</button>
-    </div>
-  </main>
+          <div class="form-row">
+            <input type="date" id="entry-date" required>
+            <select id="entry-category" required></select>
+          </div>
+
+          <div class="form-row">
+            <input
+              type="number"
+              id="entry-amount"
+              placeholder="金額"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              required
+            >
+            <input
+              type="text"
+              id="entry-memo"
+              placeholder="メモ(任意)"
+              maxlength="100"
+              autocomplete="off"
+            >
+          </div>
+
+          <button type="submit" class="submit-btn">追加</button>
+        </form>
+      </div>
+
+      <div class="panel list-panel">
+        <h2>明細</h2>
+        <ul id="entry-list" class="entry-list"></ul>
+        <p id="empty-message" class="empty-message" hidden>この月の記録はありません</p>
+      </div>
+    </section>
+  </div>
 
   <script src="script.js"></script>
 </body>
