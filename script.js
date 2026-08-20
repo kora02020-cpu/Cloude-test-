@@ -1,9 +1,15 @@
 const STORAGE_KEY = "household-budget-entries";
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 const CATEGORIES = {
   expense: ["食費", "日用品", "住居", "光熱費", "交通", "娯楽", "医療", "衣服", "その他"],
   income: ["給与", "副業", "お小遣い", "その他"],
 };
+
+const CATEGORY_COLORS = [
+  "#4f46e5", "#0ea5e9", "#16a34a", "#f59e0b",
+  "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#78716c",
+];
 
 const form = document.getElementById("entry-form");
 const dateInput = document.getElementById("entry-date");
@@ -14,16 +20,20 @@ const typeButtons = document.querySelectorAll(".type-btn");
 
 const entryList = document.getElementById("entry-list");
 const emptyMessage = document.getElementById("empty-message");
-const breakdownSection = document.getElementById("breakdown-section");
-const breakdownList = document.getElementById("breakdown-list");
 
 const totalIncomeEl = document.getElementById("total-income");
 const totalExpenseEl = document.getElementById("total-expense");
 const totalBalanceEl = document.getElementById("total-balance");
+const savingsRateEl = document.getElementById("savings-rate");
 
 const currentMonthEl = document.getElementById("current-month");
 const prevMonthBtn = document.getElementById("prev-month");
 const nextMonthBtn = document.getElementById("next-month");
+
+const donutChart = document.getElementById("donut-chart");
+const donutLegend = document.getElementById("donut-legend");
+const donutEmpty = document.getElementById("donut-empty");
+const trendChart = document.getElementById("trend-chart");
 
 let entries = loadEntries();
 let currentType = "expense";
@@ -73,15 +83,19 @@ function renderMonthLabel() {
   currentMonthEl.textContent = `${viewDate.getFullYear()}年${viewDate.getMonth() + 1}月`;
 }
 
-function entriesForCurrentMonth() {
-  const key = monthKey(viewDate);
+function entriesForMonth(date) {
+  const key = monthKey(date);
   return entries.filter((e) => e.date.startsWith(key));
+}
+
+function sumByType(monthEntries, type) {
+  return monthEntries.filter((e) => e.type === type).reduce((sum, e) => sum + e.amount, 0);
 }
 
 function render() {
   renderMonthLabel();
 
-  const monthEntries = entriesForCurrentMonth();
+  const monthEntries = entriesForMonth(viewDate);
   const sorted = [...monthEntries].sort((a, b) => b.date.localeCompare(a.date));
 
   entryList.innerHTML = "";
@@ -126,22 +140,23 @@ function render() {
 
   emptyMessage.hidden = sorted.length !== 0;
 
-  const income = monthEntries
-    .filter((e) => e.type === "income")
-    .reduce((sum, e) => sum + e.amount, 0);
-  const expense = monthEntries
-    .filter((e) => e.type === "expense")
-    .reduce((sum, e) => sum + e.amount, 0);
+  const income = sumByType(monthEntries, "income");
+  const expense = sumByType(monthEntries, "expense");
+  const balance = income - expense;
+  const savingsRate = income > 0 ? (balance / income) * 100 : 0;
 
   totalIncomeEl.textContent = formatYen(income);
   totalExpenseEl.textContent = formatYen(expense);
-  totalBalanceEl.textContent = formatYen(income - expense);
-  totalBalanceEl.classList.toggle("negative", income - expense < 0);
+  totalBalanceEl.textContent = formatYen(balance);
+  totalBalanceEl.classList.toggle("negative", balance < 0);
+  savingsRateEl.textContent = `${Math.round(savingsRate)}%`;
+  savingsRateEl.classList.toggle("negative", savingsRate < 0);
 
-  renderBreakdown(monthEntries, expense);
+  renderDonutChart(monthEntries, expense);
+  renderTrendChart();
 }
 
-function renderBreakdown(monthEntries, totalExpense) {
+function renderDonutChart(monthEntries, totalExpense) {
   const expenseByCategory = {};
   monthEntries
     .filter((e) => e.type === "expense")
@@ -151,32 +166,113 @@ function renderBreakdown(monthEntries, totalExpense) {
 
   const items = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]);
 
-  breakdownSection.hidden = items.length === 0;
-  breakdownList.innerHTML = "";
+  donutChart.innerHTML = "";
+  donutLegend.innerHTML = "";
+  donutEmpty.hidden = items.length !== 0;
+  donutChart.style.display = items.length === 0 ? "none" : "block";
 
-  items.forEach(([category, amount]) => {
-    const percent = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+  if (items.length === 0) return;
+
+  const cx = 60;
+  const cy = 60;
+  const r = 45;
+  const strokeWidth = 18;
+  const circumference = 2 * Math.PI * r;
+
+  let offset = 0;
+  items.forEach(([category, amount], i) => {
+    const fraction = amount / totalExpense;
+    const dash = fraction * circumference;
+    const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+
+    const circle = document.createElementNS(SVG_NS, "circle");
+    circle.setAttribute("cx", cx);
+    circle.setAttribute("cy", cy);
+    circle.setAttribute("r", r);
+    circle.setAttribute("fill", "none");
+    circle.setAttribute("stroke", color);
+    circle.setAttribute("stroke-width", strokeWidth);
+    circle.setAttribute("stroke-dasharray", `${dash} ${circumference - dash}`);
+    circle.setAttribute("stroke-dashoffset", -offset);
+    circle.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+    donutChart.appendChild(circle);
+
+    offset += dash;
 
     const li = document.createElement("li");
-    li.className = "breakdown-item";
+    li.className = "legend-item";
+    const percent = Math.round(fraction * 100);
+    li.innerHTML = `<i class="dot" style="background:${color}"></i><span class="legend-name">${category}</span><span class="legend-value">${formatYen(amount)} (${percent}%)</span>`;
+    donutLegend.appendChild(li);
+  });
+}
 
-    const label = document.createElement("div");
-    label.className = "breakdown-label";
-    const name = document.createElement("span");
-    name.textContent = category;
-    const value = document.createElement("span");
-    value.textContent = formatYen(amount);
-    label.append(name, value);
+function renderTrendChart() {
+  trendChart.innerHTML = "";
 
-    const barTrack = document.createElement("div");
-    barTrack.className = "breakdown-bar-track";
-    const bar = document.createElement("div");
-    bar.className = "breakdown-bar";
-    bar.style.width = `${percent}%`;
-    barTrack.appendChild(bar);
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth() - i, 1);
+    const monthEntries = entriesForMonth(d);
+    months.push({
+      label: `${d.getMonth() + 1}月`,
+      income: sumByType(monthEntries, "income"),
+      expense: sumByType(monthEntries, "expense"),
+    });
+  }
 
-    li.append(label, barTrack);
-    breakdownList.appendChild(li);
+  const maxValue = Math.max(1, ...months.map((m) => Math.max(m.income, m.expense)));
+
+  const paddingLeft = 8;
+  const paddingRight = 8;
+  const paddingBottom = 20;
+  const chartTop = 8;
+  const chartHeight = 180 - chartTop - paddingBottom;
+  const chartWidth = 320 - paddingLeft - paddingRight;
+  const groupWidth = chartWidth / months.length;
+  const barWidth = groupWidth * 0.28;
+  const gap = groupWidth * 0.06;
+
+  const baseline = document.createElementNS(SVG_NS, "line");
+  baseline.setAttribute("x1", paddingLeft);
+  baseline.setAttribute("y1", chartTop + chartHeight);
+  baseline.setAttribute("x2", 320 - paddingRight);
+  baseline.setAttribute("y2", chartTop + chartHeight);
+  baseline.setAttribute("stroke", "#e5e7eb");
+  baseline.setAttribute("stroke-width", "1");
+  trendChart.appendChild(baseline);
+
+  months.forEach((m, i) => {
+    const groupX = paddingLeft + i * groupWidth;
+    const incomeHeight = (m.income / maxValue) * chartHeight;
+    const expenseHeight = (m.expense / maxValue) * chartHeight;
+
+    const incomeBar = document.createElementNS(SVG_NS, "rect");
+    incomeBar.setAttribute("x", groupX + groupWidth / 2 - barWidth - gap / 2);
+    incomeBar.setAttribute("y", chartTop + chartHeight - incomeHeight);
+    incomeBar.setAttribute("width", barWidth);
+    incomeBar.setAttribute("height", incomeHeight);
+    incomeBar.setAttribute("rx", "2");
+    incomeBar.setAttribute("fill", "#16a34a");
+    trendChart.appendChild(incomeBar);
+
+    const expenseBar = document.createElementNS(SVG_NS, "rect");
+    expenseBar.setAttribute("x", groupX + groupWidth / 2 + gap / 2);
+    expenseBar.setAttribute("y", chartTop + chartHeight - expenseHeight);
+    expenseBar.setAttribute("width", barWidth);
+    expenseBar.setAttribute("height", expenseHeight);
+    expenseBar.setAttribute("rx", "2");
+    expenseBar.setAttribute("fill", "#ef4444");
+    trendChart.appendChild(expenseBar);
+
+    const label = document.createElementNS(SVG_NS, "text");
+    label.setAttribute("x", groupX + groupWidth / 2);
+    label.setAttribute("y", 180 - 4);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-size", "9");
+    label.setAttribute("fill", "#6b7280");
+    label.textContent = m.label;
+    trendChart.appendChild(label);
   });
 }
 
