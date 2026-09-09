@@ -3,40 +3,1179 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Todoリスト</title>
-<link rel="stylesheet" href="style.css">
+<title>ウェルネスダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+
+  :root {
+    --navy: #16233F;
+    --navy-light: #223257;
+    --gold: #E8A73B;
+    --gold-dark: #C98D28;
+    --cream: #F5F2EA;
+    --white: #FFFFFF;
+    --danger: #C0453B;
+    --success: #3C8C5B;
+    --text: #16233F;
+    --text-muted: #6B7280;
+    --border: rgba(22, 35, 63, 0.12);
+    --shadow: 0 2px 10px rgba(22, 35, 63, 0.08);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--cream);
+    color: var(--text);
+    font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .num {
+    font-family: "Space Grotesk", "Noto Sans JP", sans-serif;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--cream);
+    padding-bottom: 40px;
+  }
+
+  header.app-header {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 24px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header.app-header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  header.app-header h1 .accent {
+    color: var(--gold);
+  }
+
+  .view { display: none; padding: 20px 16px 8px; }
+  .view.active { display: block; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 0;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+
+  .back-btn:hover { color: var(--gold-dark); }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 16px;
+  }
+
+  /* Dashboard */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .nav-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: var(--shadow);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .nav-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(22, 35, 63, 0.14);
+  }
+
+  .nav-card .icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: var(--navy);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .nav-card .info h2 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .nav-card .info p {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  /* Tabs (goals quarters) */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .tab-btn.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: var(--gold);
+  }
+
+  form.inline-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    width: 100%;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+  }
+
+  form.inline-form input[type="text"] { flex: 1; }
+
+  button.primary-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    background: var(--gold);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  button.primary-btn:hover { background: var(--gold-dark); }
+
+  button.secondary-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    background: var(--white);
+    border: 1px solid var(--navy);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  ul.item-list { list-style: none; margin: 0; padding: 0; }
+
+  .goal-item, .habit-item, .finance-item, .journal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .goal-item:last-child, .finance-item:last-child, .journal-item:last-child { border-bottom: none; }
+
+  .goal-item input[type="checkbox"], .exercise-row input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    accent-color: var(--gold-dark);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .goal-item .goal-text { flex: 1; font-size: 14px; word-break: break-word; }
+  .goal-item.done .goal-text { text-decoration: line-through; color: var(--text-muted); }
+
+  .icon-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .icon-btn:hover { background: #f3d9d5; color: var(--danger); }
+
+  .empty-message {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    padding: 20px 0;
+  }
+
+  /* Exercise */
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .exercise-row:last-child { border-bottom: none; }
+
+  .exercise-row .day-label {
+    width: 34px;
+    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--navy);
+  }
+
+  .exercise-row input[type="text"] { flex: 1; }
+
+  /* Habit tracker */
+  .habit-block {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .habit-block:last-child { border-bottom: none; }
+
+  .habit-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .habit-head .habit-name {
+    flex: 1;
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+
+  .streak-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold-dark);
+    background: rgba(232, 167, 59, 0.16);
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-family: "Space Grotesk", sans-serif;
+    white-space: nowrap;
+  }
+
+  .week-checks {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .week-checks label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .week-checks input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--gold-dark);
+    cursor: pointer;
+  }
+
+  /* Finance */
+  .finance-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .finance-form-grid .full { grid-column: 1 / -1; }
+
+  .type-toggle {
+    display: flex;
+    gap: 8px;
+    grid-column: 1 / -1;
+  }
+
+  .type-toggle label {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+
+  .type-toggle input { display: none; }
+
+  .type-toggle input:checked + span {
+    color: inherit;
+  }
+
+  .type-toggle .opt-expense.checked {
+    background: rgba(192, 69, 59, 0.12);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .type-toggle .opt-income.checked {
+    background: rgba(60, 140, 91, 0.12);
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+  }
+
+  .summary-row .label { color: var(--text-muted); }
+  .summary-row .value { font-family: "Space Grotesk", sans-serif; font-weight: 700; }
+  .summary-row.total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; font-size: 16px; }
+  .summary-row.total .value.positive { color: var(--success); }
+  .summary-row.total .value.negative { color: var(--danger); }
+
+  .chart-wrap { position: relative; height: 200px; margin-top: 6px; }
+
+  .finance-item .f-main { flex: 1; min-width: 0; }
+  .finance-item .f-cat { font-weight: 600; font-size: 14px; }
+  .finance-item .f-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .finance-item .f-amount { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 14.5px; white-space: nowrap; }
+  .finance-item .f-amount.expense { color: var(--danger); }
+  .finance-item .f-amount.income { color: var(--success); }
+
+  /* Mindfulness / Journal */
+  .field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+  }
+
+  .today-date {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: -6px 0 14px;
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .gratitude-input { margin-bottom: 8px; }
+
+  textarea { resize: vertical; min-height: 90px; font-family: inherit; }
+
+  .prompt-box {
+    background: var(--navy);
+    color: var(--cream);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .prompt-box .prompt-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin: 0 0 6px;
+    font-weight: 700;
+  }
+
+  .prompt-box .prompt-text {
+    font-size: 15.5px;
+    font-weight: 500;
+    margin: 0 0 12px;
+    line-height: 1.5;
+  }
+
+  .journal-item .j-content { flex: 1; }
+  .journal-item .j-date { font-size: 12px; color: var(--text-muted); font-family: "Space Grotesk", sans-serif; }
+  .journal-item .j-q { font-size: 12.5px; color: var(--gold-dark); font-weight: 600; margin: 3px 0; }
+  .journal-item .j-text { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+
+  .save-msg {
+    font-size: 12px;
+    color: var(--success);
+    height: 16px;
+    margin-top: 6px;
+  }
+</style>
 </head>
 <body>
-  <main class="app">
-    <h1>Todoリスト</h1>
+  <div class="app">
+    <header class="app-header">
+      <h1>ウェルネス<span class="accent">ダッシュボード</span></h1>
+    </header>
 
-    <form id="todo-form" class="todo-form">
-      <input
-        type="text"
-        id="todo-input"
-        placeholder="タスクを入力..."
-        autocomplete="off"
-        maxlength="200"
-      >
-      <button type="submit">追加</button>
-    </form>
+    <!-- Dashboard -->
+    <section id="view-dashboard" class="view active">
+      <div class="dashboard-grid">
+        <button class="nav-card" data-target="goals">
+          <span class="icon">🎯</span>
+          <span class="info"><h2>ウェルネスゴール</h2><p>四半期の目標を管理</p></span>
+        </button>
+        <button class="nav-card" data-target="exercise">
+          <span class="icon">🏃</span>
+          <span class="info"><h2>運動</h2><p>週間の運動記録</p></span>
+        </button>
+        <button class="nav-card" data-target="habits">
+          <span class="icon">✅</span>
+          <span class="info"><h2>習慣トラッカー</h2><p>習慣とストリークを記録</p></span>
+        </button>
+        <button class="nav-card" data-target="finance">
+          <span class="icon">💰</span>
+          <span class="info"><h2>家計簿</h2><p>収支とカテゴリ別支出</p></span>
+        </button>
+        <button class="nav-card" data-target="mindfulness">
+          <span class="icon">🌿</span>
+          <span class="info"><h2>マインドフルネス</h2><p>感謝と今日の意図</p></span>
+        </button>
+        <button class="nav-card" data-target="journal">
+          <span class="icon">📔</span>
+          <span class="info"><h2>ジャーナリング</h2><p>問いに答えて振り返る</p></span>
+        </button>
+      </div>
+    </section>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">すべて</button>
-      <button class="filter-btn" data-filter="active">未完了</button>
-      <button class="filter-btn" data-filter="completed">完了済み</button>
-    </div>
+    <!-- Goals -->
+    <section id="view-goals" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">ウェルネスゴール</h2>
+      <div class="tabs" id="goal-tabs">
+        <button class="tab-btn active" data-quarter="Q1">Q1</button>
+        <button class="tab-btn" data-quarter="Q2">Q2</button>
+        <button class="tab-btn" data-quarter="Q3">Q3</button>
+        <button class="tab-btn" data-quarter="Q4">Q4</button>
+      </div>
+      <div class="card">
+        <form class="inline-form" id="goal-form">
+          <input type="text" id="goal-input" placeholder="新しいゴールを入力..." maxlength="120" autocomplete="off">
+          <button type="submit" class="primary-btn">追加</button>
+        </form>
+        <ul class="item-list" id="goal-list"></ul>
+        <p class="empty-message" id="goal-empty" hidden>まだゴールがありません</p>
+      </div>
+    </section>
 
-    <ul id="todo-list" class="todo-list"></ul>
+    <!-- Exercise -->
+    <section id="view-exercise" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">運動</h2>
+      <div class="card">
+        <div id="exercise-list"></div>
+      </div>
+    </section>
 
-    <p id="empty-message" class="empty-message" hidden>タスクはありません</p>
+    <!-- Habits -->
+    <section id="view-habits" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">習慣トラッカー</h2>
+      <div class="card">
+        <form class="inline-form" id="habit-form">
+          <input type="text" id="habit-input" placeholder="新しい習慣を入力..." maxlength="60" autocomplete="off">
+          <button type="submit" class="primary-btn">追加</button>
+        </form>
+        <div id="habit-list"></div>
+        <p class="empty-message" id="habit-empty" hidden>まだ習慣がありません</p>
+      </div>
+    </section>
 
-    <div class="footer">
-      <span id="remaining-count">0件のタスク</span>
-      <button id="clear-completed" class="clear-btn">完了済みを削除</button>
-    </div>
-  </main>
+    <!-- Finance -->
+    <section id="view-finance" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">家計簿</h2>
 
-  <script src="script.js"></script>
+      <div class="card">
+        <form id="finance-form">
+          <div class="finance-form-grid">
+            <div class="type-toggle">
+              <label class="opt-expense" id="opt-expense">
+                <input type="radio" name="f-type" value="expense" checked>
+                <span>支出</span>
+              </label>
+              <label class="opt-income" id="opt-income">
+                <input type="radio" name="f-type" value="income">
+                <span>収入</span>
+              </label>
+            </div>
+            <input type="text" id="f-category" placeholder="カテゴリ" list="category-suggestions" required>
+            <input type="number" id="f-amount" placeholder="金額" min="0" step="1" required>
+            <input type="date" id="f-date" class="full" required>
+            <input type="text" id="f-memo" class="full" placeholder="メモ(任意)" maxlength="100">
+          </div>
+          <datalist id="category-suggestions">
+            <option value="食費"><option value="交通費"><option value="日用品">
+            <option value="娯楽"><option value="家賃"><option value="光熱費">
+            <option value="通信費"><option value="医療"><option value="給与">
+            <option value="副収入"><option value="その他">
+          </datalist>
+          <button type="submit" class="primary-btn" style="width:100%;">記録を追加</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <p class="section-title" style="font-size:15px;margin-bottom:10px;">今月の収支</p>
+        <div class="summary-row"><span class="label">収入</span><span class="value num" id="sum-income">¥0</span></div>
+        <div class="summary-row"><span class="label">支出</span><span class="value num" id="sum-expense">¥0</span></div>
+        <div class="summary-row total"><span class="label">収支</span><span class="value num" id="sum-net">¥0</span></div>
+      </div>
+
+      <div class="card">
+        <p class="section-title" style="font-size:15px;margin-bottom:6px;">カテゴリ別支出(今月)</p>
+        <div class="chart-wrap"><canvas id="category-chart"></canvas></div>
+        <p class="empty-message" id="chart-empty" hidden>今月の支出データがありません</p>
+      </div>
+
+      <div class="card">
+        <p class="section-title" style="font-size:15px;margin-bottom:6px;">記録一覧</p>
+        <ul class="item-list" id="finance-list"></ul>
+        <p class="empty-message" id="finance-empty" hidden>まだ記録がありません</p>
+      </div>
+    </section>
+
+    <!-- Mindfulness -->
+    <section id="view-mindfulness" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">マインドフルネス</h2>
+      <p class="today-date num" id="mindful-date"></p>
+
+      <div class="card">
+        <p class="field-label">今日感謝していること(3つ)</p>
+        <input type="text" class="gratitude-input" id="gratitude-1" placeholder="1つ目" maxlength="120">
+        <input type="text" class="gratitude-input" id="gratitude-2" placeholder="2つ目" maxlength="120">
+        <input type="text" class="gratitude-input" id="gratitude-3" placeholder="3つ目" maxlength="120">
+      </div>
+
+      <div class="card">
+        <p class="field-label">今日の意図</p>
+        <textarea id="intention-input" placeholder="今日、大切にしたいことは..."></textarea>
+        <p class="save-msg" id="mindful-save-msg"></p>
+      </div>
+    </section>
+
+    <!-- Journal -->
+    <section id="view-journal" class="view">
+      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
+      <h2 class="section-title">ジャーナリング</h2>
+
+      <div class="prompt-box">
+        <p class="prompt-label">今日の問い</p>
+        <p class="prompt-text" id="journal-prompt"></p>
+        <button class="secondary-btn" id="new-prompt-btn" style="background:transparent;border-color:var(--gold);color:var(--gold);">別の質問</button>
+      </div>
+
+      <div class="card">
+        <textarea id="journal-text" placeholder="思いついたことを自由に書いてみましょう..."></textarea>
+        <button class="primary-btn" id="journal-save-btn" style="width:100%;margin-top:10px;">保存</button>
+      </div>
+
+      <div class="card">
+        <p class="section-title" style="font-size:15px;margin-bottom:6px;">過去の記録</p>
+        <ul class="item-list" id="journal-list"></ul>
+        <p class="empty-message" id="journal-empty" hidden>まだ記録がありません</p>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "wellness-dashboard-data";
+
+  var DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  var DAY_LABELS = { mon: "月", tue: "火", wed: "水", thu: "木", fri: "金", sat: "土", sun: "日" };
+  var JS_DAY_TO_KEY = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+  var JOURNAL_PROMPTS = [
+    "今日、一番心が動いた瞬間は何でしたか?",
+    "最近、自分を誇りに思えたことは何ですか?",
+    "今、手放したいと感じていることは何ですか?",
+    "誰かに感謝を伝えるとしたら、誰に何を伝えますか?",
+    "理想の一日はどんな一日ですか?",
+    "最近学んだことで、印象に残っていることは?",
+    "今の自分に必要な休息はどんな形ですか?",
+    "小さな幸せを感じた瞬間を思い出してみましょう。",
+    "今週、乗り越えた小さな壁は何ですか?",
+    "自分に優しくなれた瞬間はありましたか?",
+    "これから挑戦してみたいことは何ですか?",
+    "最近、誰かに助けられたことはありますか?",
+    "今、心の中にある不安を書き出してみましょう。",
+    "1年後の自分に伝えたいことは?",
+    "今日の自分を一言で表すと?"
+  ];
+
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  function currentMonthKey() {
+    return todayISO().slice(0, 7);
+  }
+
+  function defaultData() {
+    var goals = {};
+    ["Q1", "Q2", "Q3", "Q4"].forEach(function (q) { goals[q] = []; });
+
+    var exercise = {};
+    DAY_KEYS.forEach(function (d) { exercise[d] = { text: "", done: false }; });
+
+    return {
+      goals: goals,
+      exercise: exercise,
+      habits: [],
+      finance: [],
+      mindfulness: {},
+      journal: []
+    };
+  }
+
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultData();
+      var parsed = JSON.parse(raw);
+      var base = defaultData();
+      return Object.assign(base, parsed, {
+        goals: Object.assign(base.goals, parsed.goals),
+        exercise: Object.assign(base.exercise, parsed.exercise)
+      });
+    } catch (e) {
+      return defaultData();
+    }
+  }
+
+  var data = loadData();
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  /* ---------- Navigation ---------- */
+  function showView(name) {
+    document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
+    document.getElementById("view-" + name).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  document.querySelectorAll("[data-target]").forEach(function (el) {
+    el.addEventListener("click", function () { showView(el.dataset.target); });
+  });
+
+  /* ---------- Goals ---------- */
+  var currentQuarter = "Q1";
+  var goalForm = document.getElementById("goal-form");
+  var goalInput = document.getElementById("goal-input");
+  var goalList = document.getElementById("goal-list");
+  var goalEmpty = document.getElementById("goal-empty");
+
+  document.querySelectorAll("#goal-tabs .tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#goal-tabs .tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentQuarter = btn.dataset.quarter;
+      renderGoals();
+    });
+  });
+
+  function renderGoals() {
+    var goals = data.goals[currentQuarter] || [];
+    goalList.innerHTML = "";
+    goals.forEach(function (g) {
+      var li = document.createElement("li");
+      li.className = "goal-item" + (g.done ? " done" : "");
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = g.done;
+      cb.addEventListener("change", function () {
+        g.done = cb.checked;
+        save();
+        renderGoals();
+      });
+
+      var text = document.createElement("span");
+      text.className = "goal-text";
+      text.textContent = g.text;
+
+      var del = document.createElement("button");
+      del.className = "icon-btn";
+      del.type = "button";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", "削除");
+      del.addEventListener("click", function () {
+        data.goals[currentQuarter] = data.goals[currentQuarter].filter(function (x) { return x.id !== g.id; });
+        save();
+        renderGoals();
+      });
+
+      li.append(cb, text, del);
+      goalList.appendChild(li);
+    });
+    goalEmpty.hidden = goals.length !== 0;
+  }
+
+  goalForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = goalInput.value.trim();
+    if (!text) return;
+    data.goals[currentQuarter].unshift({ id: uid(), text: text, done: false });
+    save();
+    goalInput.value = "";
+    renderGoals();
+  });
+
+  /* ---------- Exercise ---------- */
+  var exerciseList = document.getElementById("exercise-list");
+
+  function renderExercise() {
+    exerciseList.innerHTML = "";
+    DAY_KEYS.forEach(function (day) {
+      var entry = data.exercise[day];
+      var row = document.createElement("div");
+      row.className = "exercise-row";
+
+      var label = document.createElement("span");
+      label.className = "day-label num";
+      label.textContent = DAY_LABELS[day];
+
+      var input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "運動内容を入力...";
+      input.value = entry.text;
+      input.maxLength = 100;
+      input.addEventListener("input", function () {
+        entry.text = input.value;
+        save();
+      });
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = entry.done;
+      cb.title = "完了";
+      cb.addEventListener("change", function () {
+        entry.done = cb.checked;
+        save();
+      });
+
+      row.append(label, input, cb);
+      exerciseList.appendChild(row);
+    });
+  }
+
+  /* ---------- Habits ---------- */
+  var habitForm = document.getElementById("habit-form");
+  var habitInput = document.getElementById("habit-input");
+  var habitList = document.getElementById("habit-list");
+  var habitEmpty = document.getElementById("habit-empty");
+
+  function calcStreak(checks) {
+    var todayIdx = new Date().getDay();
+    var streak = 0;
+    for (var i = 0; i < 7; i++) {
+      var idx = (todayIdx - i + 7) % 7;
+      var key = JS_DAY_TO_KEY[idx];
+      if (checks[key]) streak++;
+      else break;
+    }
+    return streak;
+  }
+
+  function renderHabits() {
+    habitList.innerHTML = "";
+    data.habits.forEach(function (h) {
+      var block = document.createElement("div");
+      block.className = "habit-block";
+
+      var head = document.createElement("div");
+      head.className = "habit-head";
+
+      var name = document.createElement("span");
+      name.className = "habit-name";
+      name.textContent = h.name;
+
+      var streak = document.createElement("span");
+      streak.className = "streak-badge num";
+      streak.textContent = "🔥 " + calcStreak(h.checks) + "日";
+
+      var del = document.createElement("button");
+      del.className = "icon-btn";
+      del.type = "button";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", "削除");
+      del.addEventListener("click", function () {
+        data.habits = data.habits.filter(function (x) { return x.id !== h.id; });
+        save();
+        renderHabits();
+      });
+
+      head.append(name, streak, del);
+
+      var week = document.createElement("div");
+      week.className = "week-checks";
+      DAY_KEYS.forEach(function (day) {
+        var label = document.createElement("label");
+        var span = document.createElement("span");
+        span.textContent = DAY_LABELS[day];
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!h.checks[day];
+        cb.addEventListener("change", function () {
+          h.checks[day] = cb.checked;
+          save();
+          renderHabits();
+        });
+        label.append(span, cb);
+        week.appendChild(label);
+      });
+
+      block.append(head, week);
+      habitList.appendChild(block);
+    });
+    habitEmpty.hidden = data.habits.length !== 0;
+  }
+
+  habitForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = habitInput.value.trim();
+    if (!name) return;
+    var checks = {};
+    DAY_KEYS.forEach(function (d) { checks[d] = false; });
+    data.habits.unshift({ id: uid(), name: name, checks: checks });
+    save();
+    habitInput.value = "";
+    renderHabits();
+  });
+
+  /* ---------- Finance ---------- */
+  var financeForm = document.getElementById("finance-form");
+  var fCategory = document.getElementById("f-category");
+  var fAmount = document.getElementById("f-amount");
+  var fDate = document.getElementById("f-date");
+  var fMemo = document.getElementById("f-memo");
+  var financeList = document.getElementById("finance-list");
+  var financeEmpty = document.getElementById("finance-empty");
+  var optExpense = document.getElementById("opt-expense");
+  var optIncome = document.getElementById("opt-income");
+  var categoryChart = null;
+
+  fDate.value = todayISO();
+
+  function updateTypeToggleUI() {
+    var type = financeForm.querySelector('input[name="f-type"]:checked').value;
+    optExpense.classList.toggle("checked", type === "expense");
+    optIncome.classList.toggle("checked", type === "income");
+  }
+  financeForm.querySelectorAll('input[name="f-type"]').forEach(function (r) {
+    r.addEventListener("change", updateTypeToggleUI);
+  });
+  updateTypeToggleUI();
+
+  var CHART_COLORS = ["#E8A73B", "#16233F", "#C97B4A", "#7A8B99", "#3C8C5B", "#9C6ADE", "#4A6670", "#D4B483"];
+
+  function fmtYen(n) {
+    var sign = n < 0 ? "-" : "";
+    return sign + "¥" + Math.abs(Math.round(n)).toLocaleString("ja-JP");
+  }
+
+  function renderFinance() {
+    var monthKey = currentMonthKey();
+    var monthRecords = data.finance.filter(function (r) { return r.date && r.date.slice(0, 7) === monthKey; });
+
+    var income = monthRecords.filter(function (r) { return r.type === "income"; })
+      .reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
+    var expense = monthRecords.filter(function (r) { return r.type === "expense"; })
+      .reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
+    var net = income - expense;
+
+    document.getElementById("sum-income").textContent = fmtYen(income);
+    document.getElementById("sum-expense").textContent = fmtYen(expense);
+    var netEl = document.getElementById("sum-net");
+    netEl.textContent = fmtYen(net);
+    netEl.classList.remove("positive", "negative");
+    netEl.classList.add(net >= 0 ? "positive" : "negative");
+
+    var byCategory = {};
+    monthRecords.filter(function (r) { return r.type === "expense"; }).forEach(function (r) {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    var categories = Object.keys(byCategory);
+    var chartEmpty = document.getElementById("chart-empty");
+    var canvas = document.getElementById("category-chart");
+
+    if (categories.length === 0) {
+      chartEmpty.hidden = false;
+      canvas.style.display = "none";
+      if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+    } else {
+      chartEmpty.hidden = true;
+      canvas.style.display = "block";
+      var values = categories.map(function (c) { return byCategory[c]; });
+      var colors = categories.map(function (_, i) { return CHART_COLORS[i % CHART_COLORS.length]; });
+
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: categories,
+          datasets: [{ data: values, backgroundColor: colors, borderRadius: 4 }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { callback: function (v) { return "¥" + v.toLocaleString("ja-JP"); } } }
+          }
+        }
+      });
+    }
+
+    var sorted = data.finance.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    financeList.innerHTML = "";
+    sorted.forEach(function (r) {
+      var li = document.createElement("li");
+      li.className = "finance-item";
+
+      var main = document.createElement("div");
+      main.className = "f-main";
+      var cat = document.createElement("div");
+      cat.className = "f-cat";
+      cat.textContent = r.category;
+      var meta = document.createElement("div");
+      meta.className = "f-meta";
+      meta.textContent = r.date + (r.memo ? " ・ " + r.memo : "");
+      main.append(cat, meta);
+
+      var amount = document.createElement("span");
+      amount.className = "f-amount num " + r.type;
+      amount.textContent = (r.type === "expense" ? "-" : "+") + fmtYen(Number(r.amount || 0)).replace("-", "");
+
+      var del = document.createElement("button");
+      del.className = "icon-btn";
+      del.type = "button";
+      del.textContent = "✕";
+      del.setAttribute("aria-label", "削除");
+      del.addEventListener("click", function () {
+        data.finance = data.finance.filter(function (x) { return x.id !== r.id; });
+        save();
+        renderFinance();
+      });
+
+      li.append(main, amount, del);
+      financeList.appendChild(li);
+    });
+    financeEmpty.hidden = sorted.length !== 0;
+  }
+
+  financeForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var type = financeForm.querySelector('input[name="f-type"]:checked').value;
+    var category = fCategory.value.trim();
+    var amount = Number(fAmount.value);
+    var date = fDate.value;
+    var memo = fMemo.value.trim();
+    if (!category || !amount || amount <= 0 || !date) return;
+
+    data.finance.unshift({ id: uid(), type: type, category: category, amount: amount, date: date, memo: memo });
+    save();
+
+    fCategory.value = "";
+    fAmount.value = "";
+    fMemo.value = "";
+    fDate.value = todayISO();
+    renderFinance();
+  });
+
+  /* ---------- Mindfulness ---------- */
+  var mindfulDateEl = document.getElementById("mindful-date");
+  var gratitude1 = document.getElementById("gratitude-1");
+  var gratitude2 = document.getElementById("gratitude-2");
+  var gratitude3 = document.getElementById("gratitude-3");
+  var intentionInput = document.getElementById("intention-input");
+  var mindfulSaveMsg = document.getElementById("mindful-save-msg");
+
+  function todayEntry() {
+    var key = todayISO();
+    if (!data.mindfulness[key]) {
+      data.mindfulness[key] = { gratitude: ["", "", ""], intention: "" };
+    }
+    return data.mindfulness[key];
+  }
+
+  var mindfulSaveTimer = null;
+  function initMindfulness() {
+    mindfulDateEl.textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+    var entry = todayEntry();
+    gratitude1.value = entry.gratitude[0] || "";
+    gratitude2.value = entry.gratitude[1] || "";
+    gratitude3.value = entry.gratitude[2] || "";
+    intentionInput.value = entry.intention || "";
+
+    function persistMindful() {
+      var e = todayEntry();
+      e.gratitude = [gratitude1.value, gratitude2.value, gratitude3.value];
+      e.intention = intentionInput.value;
+      save();
+      mindfulSaveMsg.textContent = "保存しました";
+      clearTimeout(mindfulSaveTimer);
+      mindfulSaveTimer = setTimeout(function () { mindfulSaveMsg.textContent = ""; }, 1500);
+    }
+
+    [gratitude1, gratitude2, gratitude3, intentionInput].forEach(function (el) {
+      el.addEventListener("input", persistMindful);
+    });
+  }
+
+  /* ---------- Journal ---------- */
+  var journalPromptEl = document.getElementById("journal-prompt");
+  var newPromptBtn = document.getElementById("new-prompt-btn");
+  var journalText = document.getElementById("journal-text");
+  var journalSaveBtn = document.getElementById("journal-save-btn");
+  var journalList = document.getElementById("journal-list");
+  var journalEmpty = document.getElementById("journal-empty");
+  var currentPrompt = JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)];
+
+  function renderPrompt() {
+    journalPromptEl.textContent = currentPrompt;
+  }
+
+  newPromptBtn.addEventListener("click", function () {
+    var next = currentPrompt;
+    if (JOURNAL_PROMPTS.length > 1) {
+      while (next === currentPrompt) {
+        next = JOURNAL_PROMPTS[Math.floor(Math.random() * JOURNAL_PROMPTS.length)];
+      }
+    }
+    currentPrompt = next;
+    renderPrompt();
+  });
+
+  function renderJournal() {
+    var sorted = data.journal.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); });
+    journalList.innerHTML = "";
+    sorted.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "journal-item";
+      var content = document.createElement("div");
+      content.className = "j-content";
+      var d = document.createElement("div");
+      d.className = "j-date num";
+      d.textContent = entry.date;
+      var q = document.createElement("div");
+      q.className = "j-q";
+      q.textContent = entry.question;
+      var t = document.createElement("div");
+      t.className = "j-text";
+      t.textContent = entry.text;
+      content.append(d, q, t);
+      li.append(content);
+      journalList.appendChild(li);
+    });
+    journalEmpty.hidden = sorted.length !== 0;
+  }
+
+  journalSaveBtn.addEventListener("click", function () {
+    var text = journalText.value.trim();
+    if (!text) return;
+    data.journal.unshift({ id: uid(), date: todayISO(), question: currentPrompt, text: text });
+    save();
+    journalText.value = "";
+    renderJournal();
+  });
+
+  /* ---------- Init ---------- */
+  renderGoals();
+  renderExercise();
+  renderHabits();
+  renderFinance();
+  initMindfulness();
+  renderPrompt();
+  renderJournal();
+})();
+</script>
 </body>
 </html>
