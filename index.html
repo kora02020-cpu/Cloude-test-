@@ -57,7 +57,8 @@
     max-width: 1160px;
     margin: 0 auto;
     min-height: 100vh;
-    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
   }
 
   header.app-header {
@@ -100,8 +101,14 @@
     opacity: 0.85;
   }
 
-  .view { display: none; padding: 18px clamp(16px, 4vw, 44px) 8px; }
+  .view { display: none; padding: 18px clamp(16px, 4vw, 44px) 40px; }
   .view.active { display: block; }
+
+  #view-dashboard.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+  }
 
   /* Non-dashboard views keep a comfortable reading column even on a wide screen */
   .view-col { max-width: 660px; margin: 0 auto; }
@@ -175,18 +182,23 @@
   .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-auto-rows: 1fr;
     gap: 16px;
+    flex: 1 1 auto;
+    align-content: stretch;
   }
 
   .nav-card {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 170px;
     background: var(--paper);
     border: 1px solid var(--border);
     border-radius: 18px;
-    padding: 22px 20px;
+    padding: 26px 24px;
     cursor: pointer;
     text-align: left;
     box-shadow: var(--shadow);
