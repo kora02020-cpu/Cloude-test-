@@ -586,8 +586,6 @@
     margin: 0 0 6px;
   }
 
-  .gratitude-input { margin-bottom: 8px; }
-
   textarea { resize: vertical; min-height: 90px; font-family: inherit; }
 
   .prompt-box {
@@ -855,15 +853,13 @@
       </div>
 
       <div class="card">
-        <p class="field-label">今日感謝していること(3つ)</p>
-        <input type="text" class="gratitude-input" id="gratitude-1" placeholder="1つ目" maxlength="120">
-        <input type="text" class="gratitude-input" id="gratitude-2" placeholder="2つ目" maxlength="120">
-        <input type="text" class="gratitude-input" id="gratitude-3" placeholder="3つ目" maxlength="120">
+        <p class="field-label">今日できたこと</p>
+        <textarea id="good-input" placeholder="今日うまくできたことを書きましょう..."></textarea>
       </div>
 
       <div class="card">
-        <p class="field-label">今日の意図</p>
-        <textarea id="intention-input" placeholder="今日、大切にしたいことは..."></textarea>
+        <p class="field-label">今日の改善できること</p>
+        <textarea id="improve-input" placeholder="次はどうすればもっと良くなるか考えてみましょう..."></textarea>
         <p class="save-msg" id="mindful-save-msg"></p>
       </div>
       </div>
@@ -1335,16 +1331,14 @@
 
   /* ---------- Mindfulness ---------- */
   var mindfulDateEl = document.getElementById("mindful-date");
-  var gratitude1 = document.getElementById("gratitude-1");
-  var gratitude2 = document.getElementById("gratitude-2");
-  var gratitude3 = document.getElementById("gratitude-3");
-  var intentionInput = document.getElementById("intention-input");
+  var goodInput = document.getElementById("good-input");
+  var improveInput = document.getElementById("improve-input");
   var mindfulSaveMsg = document.getElementById("mindful-save-msg");
 
   function todayEntry() {
     var key = todayISO();
     if (!data.mindfulness[key]) {
-      data.mindfulness[key] = { gratitude: ["", "", ""], intention: "" };
+      data.mindfulness[key] = { good: "", improve: "" };
     }
     return data.mindfulness[key];
   }
@@ -1353,22 +1347,20 @@
   function initMindfulness() {
     mindfulDateEl.textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }) + "の記録";
     var entry = todayEntry();
-    gratitude1.value = entry.gratitude[0] || "";
-    gratitude2.value = entry.gratitude[1] || "";
-    gratitude3.value = entry.gratitude[2] || "";
-    intentionInput.value = entry.intention || "";
+    goodInput.value = entry.good || "";
+    improveInput.value = entry.improve || "";
 
     function persistMindful() {
       var e = todayEntry();
-      e.gratitude = [gratitude1.value, gratitude2.value, gratitude3.value];
-      e.intention = intentionInput.value;
+      e.good = goodInput.value;
+      e.improve = improveInput.value;
       save();
       mindfulSaveMsg.textContent = "保存しました";
       clearTimeout(mindfulSaveTimer);
       mindfulSaveTimer = setTimeout(function () { mindfulSaveMsg.textContent = ""; }, 1500);
     }
 
-    [gratitude1, gratitude2, gratitude3, intentionInput].forEach(function (el) {
+    [goodInput, improveInput].forEach(function (el) {
       el.addEventListener("input", persistMindful);
     });
   }
@@ -1490,10 +1482,10 @@
       });
     }
 
-    var mEntry = data.mindfulness[todayISO()] || { gratitude: ["", "", ""], intention: "" };
-    var filledCount = mEntry.gratitude.filter(function (g) { return g && g.trim(); }).length + (mEntry.intention && mEntry.intention.trim() ? 1 : 0);
-    document.getElementById("dash-mindful-bar").style.width = Math.round(filledCount / 4 * 100) + "%";
-    document.getElementById("dash-mindful-label").textContent = filledCount + "/4 記入済み";
+    var mEntry = data.mindfulness[todayISO()] || { good: "", improve: "" };
+    var filledCount = (mEntry.good && mEntry.good.trim() ? 1 : 0) + (mEntry.improve && mEntry.improve.trim() ? 1 : 0);
+    document.getElementById("dash-mindful-bar").style.width = Math.round(filledCount / 2 * 100) + "%";
+    document.getElementById("dash-mindful-label").textContent = filledCount + "/2 記入済み";
 
     document.getElementById("dash-journal-count").textContent = data.journal.length;
     var barsWrap = document.getElementById("dash-journal-bars");
