@@ -174,19 +174,19 @@
   /* Dashboard */
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
   }
 
   .nav-card {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: stretch;
+    gap: 14px;
     background: var(--paper);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px 16px;
+    border-radius: 18px;
+    padding: 22px 20px;
     cursor: pointer;
     text-align: left;
     box-shadow: var(--shadow);
@@ -198,16 +198,22 @@
     box-shadow: 0 6px 16px rgba(28, 27, 23, 0.12);
   }
 
+  .nav-card .card-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
   .nav-card .swatch {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
     flex-shrink: 0;
   }
 
   .nav-card .info h2 {
     margin: 0 0 3px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--ink);
   }
@@ -216,6 +222,80 @@
     margin: 0;
     font-size: 12px;
     color: var(--muted);
+  }
+
+  /* Dashboard mini stats */
+  .card-stat { margin-top: 2px; }
+
+  .stat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .stat-row .stat-number {
+    font-size: 22px;
+    font-weight: 700;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--ink);
+  }
+
+  .stat-row .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .mini-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(28, 27, 23, 0.07);
+    overflow: hidden;
+  }
+
+  .mini-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.2s ease;
+  }
+
+  .week-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .week-dots span {
+    flex: 1;
+    height: 10px;
+    border-radius: 4px;
+    background: rgba(28, 27, 23, 0.08);
+  }
+
+  .week-dots span.filled { background: var(--c-gold); }
+
+  .mini-stack-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(28, 27, 23, 0.07);
+  }
+
+  .mini-stack-bar > span { height: 100%; }
+
+  .mini-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 30px;
+  }
+
+  .mini-bars span {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: var(--c-lavender);
+    min-height: 3px;
   }
 
   /* Card */
@@ -567,28 +647,64 @@
     <section id="view-dashboard" class="view active">
       <div class="dashboard-grid">
         <button class="nav-card" data-target="goals">
-          <span class="swatch" style="background:var(--c-sage);"></span>
-          <span class="info"><h2>ウェルネスゴール</h2><p>四半期の目標</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-sage);"></span>
+            <span class="info"><h2>ウェルネスゴール</h2><p>四半期の目標</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-label" id="dash-goal-label">-</span></span>
+            <span class="mini-progress"><span id="dash-goal-bar" style="width:0%;background:var(--c-sage);"></span></span>
+          </span>
         </button>
         <button class="nav-card" data-target="exercise">
-          <span class="swatch" style="background:var(--c-gold);"></span>
-          <span class="info"><h2>運動</h2><p>週間スケジュール</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-gold);"></span>
+            <span class="info"><h2>運動</h2><p>週間スケジュール</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-label" id="dash-exercise-label">-</span></span>
+            <span class="week-dots" id="dash-exercise-dots"></span>
+          </span>
         </button>
         <button class="nav-card" data-target="habits">
-          <span class="swatch" style="background:var(--c-slate);"></span>
-          <span class="info"><h2>習慣トラッカー</h2><p>毎日の積み重ね</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-slate);"></span>
+            <span class="info"><h2>習慣トラッカー</h2><p>毎日の積み重ね</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-label" id="dash-habit-label">-</span></span>
+            <span class="mini-progress"><span id="dash-habit-bar" style="width:0%;background:var(--c-slate);"></span></span>
+          </span>
         </button>
         <button class="nav-card" data-target="finance">
-          <span class="swatch" style="background:var(--c-terracotta);"></span>
-          <span class="info"><h2>家計簿</h2><p>収支の記録</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-terracotta);"></span>
+            <span class="info"><h2>家計簿</h2><p>収支の記録</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-number num" id="dash-finance-net">¥0</span><span class="stat-label">今月の収支</span></span>
+            <span class="mini-stack-bar" id="dash-finance-bar"></span>
+          </span>
         </button>
         <button class="nav-card" data-target="mindfulness">
-          <span class="swatch" style="background:var(--c-moss);"></span>
-          <span class="info"><h2>マインドフルネス</h2><p>感謝と今日の意図</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-moss);"></span>
+            <span class="info"><h2>マインドフルネス</h2><p>感謝と今日の意図</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-label" id="dash-mindful-label">-</span></span>
+            <span class="mini-progress"><span id="dash-mindful-bar" style="width:0%;background:var(--c-moss);"></span></span>
+          </span>
         </button>
         <button class="nav-card" data-target="journal">
-          <span class="swatch" style="background:var(--c-lavender);"></span>
-          <span class="info"><h2>ジャーナリング</h2><p>自分を振り返る</p></span>
+          <span class="card-head">
+            <span class="swatch" style="background:var(--c-lavender);"></span>
+            <span class="info"><h2>ジャーナリング</h2><p>自分を振り返る</p></span>
+          </span>
+          <span class="card-stat">
+            <span class="stat-row"><span class="stat-number num" id="dash-journal-count">0</span><span class="stat-label">件の記録</span></span>
+            <span class="mini-bars" id="dash-journal-bars"></span>
+          </span>
         </button>
       </div>
     </section>
@@ -876,6 +992,7 @@
     document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
     document.getElementById("view-" + name).classList.add("active");
     window.scrollTo(0, 0);
+    if (name === "dashboard") renderDashboard();
   }
 
   document.querySelectorAll("[data-target]").forEach(function (el) {
@@ -1313,6 +1430,91 @@
     renderJournal();
   });
 
+  /* ---------- Dashboard summary ---------- */
+  function renderDashboard() {
+    var totalGoals = 0, doneGoals = 0;
+    ["Q1", "Q2", "Q3", "Q4"].forEach(function (q) {
+      var arr = data.goals[q] || [];
+      totalGoals += arr.length;
+      doneGoals += arr.filter(function (g) { return g.done; }).length;
+    });
+    document.getElementById("dash-goal-bar").style.width = (totalGoals ? Math.round(doneGoals / totalGoals * 100) : 0) + "%";
+    document.getElementById("dash-goal-label").textContent = totalGoals ? (doneGoals + "/" + totalGoals + " 達成") : "まだ目標がありません";
+
+    var exDoneCount = 0;
+    var dotsWrap = document.getElementById("dash-exercise-dots");
+    dotsWrap.innerHTML = "";
+    DAY_KEYS.forEach(function (day) {
+      var done = data.exercise[day] && data.exercise[day].done;
+      if (done) exDoneCount++;
+      var dot = document.createElement("span");
+      if (done) dot.className = "filled";
+      dotsWrap.appendChild(dot);
+    });
+    document.getElementById("dash-exercise-label").textContent = exDoneCount + "/7日 完了";
+
+    var todayKey = JS_DAY_TO_KEY[new Date().getDay()];
+    var totalHabits = data.habits.length;
+    var doneHabitsToday = data.habits.filter(function (h) { return h.checks[todayKey]; }).length;
+    document.getElementById("dash-habit-bar").style.width = (totalHabits ? Math.round(doneHabitsToday / totalHabits * 100) : 0) + "%";
+    document.getElementById("dash-habit-label").textContent = totalHabits ? ("今日 " + doneHabitsToday + "/" + totalHabits + "件 実施") : "まだ習慣がありません";
+
+    var monthKey = currentMonthKey();
+    var monthRecords = data.finance.filter(function (r) { return r.date && r.date.slice(0, 7) === monthKey; });
+    var income = monthRecords.filter(function (r) { return r.type === "income"; }).reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
+    var expense = monthRecords.filter(function (r) { return r.type === "expense"; }).reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
+    var net = income - expense;
+    var netEl = document.getElementById("dash-finance-net");
+    netEl.textContent = fmtYen(net);
+    netEl.style.color = net >= 0 ? "var(--income)" : "var(--expense)";
+
+    var byCategory = {};
+    monthRecords.filter(function (r) { return r.type === "expense"; }).forEach(function (r) {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    var cats = Object.keys(byCategory);
+    var barWrap = document.getElementById("dash-finance-bar");
+    barWrap.innerHTML = "";
+    if (cats.length === 0) {
+      var emptySeg = document.createElement("span");
+      emptySeg.style.width = "100%";
+      emptySeg.style.background = "rgba(28, 27, 23, 0.07)";
+      barWrap.appendChild(emptySeg);
+    } else {
+      var catTotal = cats.reduce(function (s, c) { return s + byCategory[c]; }, 0);
+      cats.forEach(function (c, i) {
+        var seg = document.createElement("span");
+        seg.style.width = (byCategory[c] / catTotal * 100) + "%";
+        seg.style.background = CHART_COLORS[i % CHART_COLORS.length];
+        barWrap.appendChild(seg);
+      });
+    }
+
+    var mEntry = data.mindfulness[todayISO()] || { gratitude: ["", "", ""], intention: "" };
+    var filledCount = mEntry.gratitude.filter(function (g) { return g && g.trim(); }).length + (mEntry.intention && mEntry.intention.trim() ? 1 : 0);
+    document.getElementById("dash-mindful-bar").style.width = Math.round(filledCount / 4 * 100) + "%";
+    document.getElementById("dash-mindful-label").textContent = filledCount + "/4 記入済み";
+
+    document.getElementById("dash-journal-count").textContent = data.journal.length;
+    var barsWrap = document.getElementById("dash-journal-bars");
+    barsWrap.innerHTML = "";
+    var counts = [];
+    var maxCount = 0;
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date();
+      d.setDate(d.getDate() - i);
+      var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      var c = data.journal.filter(function (e) { return e.date === key; }).length;
+      counts.push(c);
+      if (c > maxCount) maxCount = c;
+    }
+    counts.forEach(function (c) {
+      var bar = document.createElement("span");
+      bar.style.height = (maxCount ? Math.max(3, Math.round(c / maxCount * 30)) : 3) + "px";
+      barsWrap.appendChild(bar);
+    });
+  }
+
   /* ---------- Init ---------- */
   renderGoals();
   renderExercise();
@@ -1321,6 +1523,7 @@
   initMindfulness();
   renderPrompt();
   renderJournal();
+  renderDashboard();
 })();
 </script>
 </body>
