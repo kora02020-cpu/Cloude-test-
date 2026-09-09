@@ -54,7 +54,7 @@
   }
 
   .app {
-    max-width: 520px;
+    max-width: 1160px;
     margin: 0 auto;
     min-height: 100vh;
     padding-bottom: 40px;
@@ -62,7 +62,7 @@
 
   header.app-header {
     background: var(--cream);
-    padding: 22px 18px 14px;
+    padding: 22px clamp(18px, 4vw, 44px) 14px;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -100,8 +100,11 @@
     opacity: 0.85;
   }
 
-  .view { display: none; padding: 18px 16px 8px; }
+  .view { display: none; padding: 18px clamp(16px, 4vw, 44px) 8px; }
   .view.active { display: block; }
+
+  /* Non-dashboard views keep a comfortable reading column even on a wide screen */
+  .view-col { max-width: 660px; margin: 0 auto; }
 
   .back-btn {
     display: inline-flex;
@@ -171,12 +174,8 @@
   /* Dashboard */
   .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  @media (max-width: 380px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
   }
 
   .nav-card {
@@ -596,6 +595,7 @@
 
     <!-- Goals -->
     <section id="view-goals" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -619,10 +619,12 @@
         <ul class="item-list" id="goal-list"></ul>
         <p class="empty-message" id="goal-empty" hidden>まだゴールがありません</p>
       </div>
+      </div>
     </section>
 
     <!-- Exercise -->
     <section id="view-exercise" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -635,10 +637,12 @@
       <div class="card">
         <div id="exercise-list"></div>
       </div>
+      </div>
     </section>
 
     <!-- Habits -->
     <section id="view-habits" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -656,10 +660,12 @@
         <div id="habit-list"></div>
         <p class="empty-message" id="habit-empty" hidden>まだ習慣がありません</p>
       </div>
+      </div>
     </section>
 
     <!-- Finance -->
     <section id="view-finance" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -716,10 +722,12 @@
         <ul class="item-list" id="finance-list"></ul>
         <p class="empty-message" id="finance-empty" hidden>まだ記録がありません</p>
       </div>
+      </div>
     </section>
 
     <!-- Mindfulness -->
     <section id="view-mindfulness" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -742,10 +750,12 @@
         <textarea id="intention-input" placeholder="今日、大切にしたいことは..."></textarea>
         <p class="save-msg" id="mindful-save-msg"></p>
       </div>
+      </div>
     </section>
 
     <!-- Journal -->
     <section id="view-journal" class="view">
+      <div class="view-col">
       <button class="back-btn" data-target="dashboard">← 戻る</button>
       <div class="section-hero">
         <div class="hero-top">
@@ -771,6 +781,7 @@
         <p class="card-title">過去の記録</p>
         <ul class="item-list" id="journal-list"></ul>
         <p class="empty-message" id="journal-empty" hidden>まだ記録がありません</p>
+      </div>
       </div>
     </section>
   </div>
