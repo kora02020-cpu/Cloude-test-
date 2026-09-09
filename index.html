@@ -6,108 +6,188 @@
 <title>ウェルネスダッシュボード</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; }
 
   :root {
-    --navy: #16233F;
-    --navy-light: #223257;
-    --gold: #E8A73B;
-    --gold-dark: #C98D28;
-    --cream: #F5F2EA;
-    --white: #FFFFFF;
-    --danger: #C0453B;
-    --success: #3C8C5B;
-    --text: #16233F;
-    --text-muted: #6B7280;
-    --border: rgba(22, 35, 63, 0.12);
-    --shadow: 0 2px 10px rgba(22, 35, 63, 0.08);
+    --cream: #F6F1E4;
+    --paper: #FFFFFF;
+    --ink: #1C1B17;
+    --ink-soft: #4A4838;
+    --muted: #8A8677;
+    --olive: #4B5A34;
+    --olive-deep: #37421F;
+    --olive-tint: rgba(75, 90, 52, 0.10);
+    --border: rgba(28, 27, 23, 0.11);
+    --shadow: 0 2px 12px rgba(28, 27, 23, 0.07);
+
+    --c-sage: #90A873;
+    --c-gold: #D9A23B;
+    --c-slate: #6C84A6;
+    --c-terracotta: #BE7748;
+    --c-moss: #7E9463;
+    --c-lavender: #9A82B8;
+
+    --income: #55703A;
+    --expense: #B5623B;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    background: var(--cream);
-    color: var(--text);
+    background-color: var(--cream);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    color: var(--ink-soft);
     font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
   .num {
     font-family: "Space Grotesk", "Noto Sans JP", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .disp {
+    font-family: "Bricolage Grotesque", "Noto Sans JP", sans-serif;
   }
 
   .app {
-    max-width: 480px;
+    max-width: 520px;
     margin: 0 auto;
     min-height: 100vh;
-    background: var(--cream);
     padding-bottom: 40px;
   }
 
   header.app-header {
-    background: var(--navy);
-    color: var(--cream);
-    padding: 24px 20px;
-    text-align: center;
+    background: var(--cream);
+    padding: 22px 18px 14px;
     position: sticky;
     top: 0;
     z-index: 10;
   }
 
+  .app-header .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
   header.app-header h1 {
     margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
   }
 
-  header.app-header h1 .accent {
-    color: var(--gold);
+  header.app-header h1 .accent { color: var(--olive); }
+
+  .app-header .today {
+    font-size: 12.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
-  .view { display: none; padding: 20px 16px 8px; }
+  .app-header .rule {
+    height: 3px;
+    background: var(--olive);
+    border-radius: 2px;
+    margin-top: 12px;
+    opacity: 0.85;
+  }
+
+  .view { display: none; padding: 18px 16px 8px; }
   .view.active { display: block; }
 
   .back-btn {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    background: none;
-    border: none;
-    color: var(--navy);
-    font-size: 14px;
-    font-weight: 500;
-    padding: 8px 0;
-    margin-bottom: 12px;
+    gap: 6px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px 7px 10px;
+    margin-bottom: 16px;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
     cursor: pointer;
   }
 
-  .back-btn:hover { color: var(--gold-dark); }
+  .back-btn:hover { border-color: var(--olive); color: var(--olive); }
 
-  .section-title {
-    font-size: 18px;
+  /* Section hero (editorial header) */
+  .section-hero { margin-bottom: 18px; }
+
+  .hero-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .hero-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+
+  .hero-en {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+
+  .hero-ja {
+    font-size: 15px;
     font-weight: 700;
-    margin: 0 0 16px;
+    color: var(--olive);
+    margin: 3px 0 0 40px;
+  }
+
+  .hero-desc {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin: 12px 0 0;
+  }
+
+  .hero-divider {
+    height: 3px;
+    background: var(--olive);
+    border-radius: 2px;
+    margin-top: 14px;
+    opacity: 0.85;
   }
 
   /* Dashboard */
   .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
+  }
+
+  @media (max-width: 380px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
   }
 
   .nav-card {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--white);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--paper);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 16px;
+    padding: 18px 16px;
     cursor: pointer;
     text-align: left;
     box-shadow: var(--shadow);
@@ -115,43 +195,45 @@
   }
 
   .nav-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(22, 35, 63, 0.14);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(28, 27, 23, 0.12);
   }
 
-  .nav-card .icon {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
+  .nav-card .swatch {
+    width: 34px;
+    height: 34px;
     border-radius: 10px;
-    background: var(--navy);
-    color: var(--gold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
+    flex-shrink: 0;
   }
 
   .nav-card .info h2 {
-    margin: 0 0 2px;
+    margin: 0 0 3px;
     font-size: 15px;
     font-weight: 700;
+    color: var(--ink);
   }
 
   .nav-card .info p {
     margin: 0;
-    font-size: 12.5px;
-    color: var(--text-muted);
+    font-size: 12px;
+    color: var(--muted);
   }
 
   /* Card */
   .card {
-    background: var(--white);
+    background: var(--paper);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px;
     margin-bottom: 14px;
     box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 10px;
   }
 
   /* Tabs (goals quarters) */
@@ -165,19 +247,19 @@
     flex: 1;
     padding: 8px 0;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     border: 1px solid var(--border);
-    background: var(--white);
-    color: var(--text-muted);
+    background: var(--paper);
+    color: var(--muted);
     border-radius: 999px;
     cursor: pointer;
     font-family: "Space Grotesk", sans-serif;
   }
 
   .tab-btn.active {
-    background: var(--navy);
-    border-color: var(--navy);
-    color: var(--gold);
+    background: var(--olive);
+    border-color: var(--olive);
+    color: var(--cream);
   }
 
   form.inline-form {
@@ -196,14 +278,14 @@
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: var(--white);
-    color: var(--text);
+    background: var(--paper);
+    color: var(--ink);
     outline: none;
     width: 100%;
   }
 
   input:focus, select:focus, textarea:focus {
-    border-color: var(--gold);
+    border-color: var(--olive);
   }
 
   form.inline-form input[type="text"] { flex: 1; }
@@ -212,23 +294,23 @@
     padding: 10px 16px;
     font-size: 14px;
     font-weight: 700;
-    color: var(--navy);
-    background: var(--gold);
+    color: var(--cream);
+    background: var(--olive);
     border: none;
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
   }
 
-  button.primary-btn:hover { background: var(--gold-dark); }
+  button.primary-btn:hover { background: var(--olive-deep); }
 
   button.secondary-btn {
     padding: 10px 16px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--navy);
-    background: var(--white);
-    border: 1px solid var(--navy);
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--ink);
     border-radius: 8px;
     cursor: pointer;
   }
@@ -248,13 +330,13 @@
   .goal-item input[type="checkbox"], .exercise-row input[type="checkbox"] {
     width: 19px;
     height: 19px;
-    accent-color: var(--gold-dark);
+    accent-color: var(--olive);
     cursor: pointer;
     flex-shrink: 0;
   }
 
   .goal-item .goal-text { flex: 1; font-size: 14px; word-break: break-word; }
-  .goal-item.done .goal-text { text-decoration: line-through; color: var(--text-muted); }
+  .goal-item.done .goal-text { text-decoration: line-through; color: var(--muted); }
 
   .icon-btn {
     flex-shrink: 0;
@@ -262,18 +344,18 @@
     height: 28px;
     border: none;
     background: transparent;
-    color: var(--text-muted);
+    color: var(--muted);
     font-size: 16px;
     line-height: 1;
     border-radius: 6px;
     cursor: pointer;
   }
 
-  .icon-btn:hover { background: #f3d9d5; color: var(--danger); }
+  .icon-btn:hover { background: rgba(181, 98, 59, 0.14); color: var(--expense); }
 
   .empty-message {
     text-align: center;
-    color: var(--text-muted);
+    color: var(--muted);
     font-size: 13.5px;
     padding: 20px 0;
   }
@@ -294,7 +376,7 @@
     font-weight: 700;
     font-size: 13px;
     font-family: "Space Grotesk", sans-serif;
-    color: var(--navy);
+    color: var(--olive);
   }
 
   .exercise-row input[type="text"] { flex: 1; }
@@ -317,13 +399,14 @@
     flex: 1;
     font-weight: 700;
     font-size: 14.5px;
+    color: var(--ink);
   }
 
   .streak-badge {
     font-size: 12px;
     font-weight: 700;
-    color: var(--gold-dark);
-    background: rgba(232, 167, 59, 0.16);
+    color: var(--olive-deep);
+    background: var(--olive-tint);
     padding: 3px 9px;
     border-radius: 999px;
     font-family: "Space Grotesk", sans-serif;
@@ -342,13 +425,13 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--muted);
   }
 
   .week-checks input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    accent-color: var(--gold-dark);
+    accent-color: var(--olive);
     cursor: pointer;
   }
 
@@ -377,25 +460,21 @@
     font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
-    color: var(--text-muted);
+    color: var(--muted);
   }
 
   .type-toggle input { display: none; }
 
-  .type-toggle input:checked + span {
-    color: inherit;
-  }
-
   .type-toggle .opt-expense.checked {
-    background: rgba(192, 69, 59, 0.12);
-    border-color: var(--danger);
-    color: var(--danger);
+    background: rgba(181, 98, 59, 0.12);
+    border-color: var(--expense);
+    color: var(--expense);
   }
 
   .type-toggle .opt-income.checked {
-    background: rgba(60, 140, 91, 0.12);
-    border-color: var(--success);
-    color: var(--success);
+    background: rgba(85, 112, 58, 0.12);
+    border-color: var(--income);
+    color: var(--income);
   }
 
   .summary-row {
@@ -405,34 +484,27 @@
     font-size: 14px;
   }
 
-  .summary-row .label { color: var(--text-muted); }
+  .summary-row .label { color: var(--muted); }
   .summary-row .value { font-family: "Space Grotesk", sans-serif; font-weight: 700; }
   .summary-row.total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; font-size: 16px; }
-  .summary-row.total .value.positive { color: var(--success); }
-  .summary-row.total .value.negative { color: var(--danger); }
+  .summary-row.total .value.positive { color: var(--income); }
+  .summary-row.total .value.negative { color: var(--expense); }
 
   .chart-wrap { position: relative; height: 200px; margin-top: 6px; }
 
   .finance-item .f-main { flex: 1; min-width: 0; }
-  .finance-item .f-cat { font-weight: 600; font-size: 14px; }
-  .finance-item .f-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .finance-item .f-cat { font-weight: 600; font-size: 14px; color: var(--ink); }
+  .finance-item .f-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .finance-item .f-amount { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 14.5px; white-space: nowrap; }
-  .finance-item .f-amount.expense { color: var(--danger); }
-  .finance-item .f-amount.income { color: var(--success); }
+  .finance-item .f-amount.expense { color: var(--expense); }
+  .finance-item .f-amount.income { color: var(--income); }
 
   /* Mindfulness / Journal */
   .field-label {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--muted);
     margin: 0 0 6px;
-  }
-
-  .today-date {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin: -6px 0 14px;
-    font-family: "Space Grotesk", sans-serif;
   }
 
   .gratitude-input { margin-bottom: 8px; }
@@ -440,36 +512,43 @@
   textarea { resize: vertical; min-height: 90px; font-family: inherit; }
 
   .prompt-box {
-    background: var(--navy);
+    background: var(--olive);
     color: var(--cream);
-    border-radius: 12px;
-    padding: 18px;
+    border-radius: 14px;
+    padding: 20px;
     margin-bottom: 14px;
   }
 
   .prompt-box .prompt-label {
     font-size: 11px;
     letter-spacing: 0.08em;
-    color: var(--gold);
-    margin: 0 0 6px;
+    color: var(--c-gold);
+    margin: 0 0 8px;
     font-weight: 700;
+    text-transform: uppercase;
   }
 
   .prompt-box .prompt-text {
-    font-size: 15.5px;
+    font-size: 16px;
     font-weight: 500;
-    margin: 0 0 12px;
-    line-height: 1.5;
+    margin: 0 0 14px;
+    line-height: 1.55;
+  }
+
+  .prompt-box .secondary-btn {
+    background: transparent;
+    border-color: var(--c-gold);
+    color: var(--c-gold);
   }
 
   .journal-item .j-content { flex: 1; }
-  .journal-item .j-date { font-size: 12px; color: var(--text-muted); font-family: "Space Grotesk", sans-serif; }
-  .journal-item .j-q { font-size: 12.5px; color: var(--gold-dark); font-weight: 600; margin: 3px 0; }
+  .journal-item .j-date { font-size: 12px; color: var(--muted); font-family: "Space Grotesk", sans-serif; }
+  .journal-item .j-q { font-size: 12.5px; color: var(--olive); font-weight: 600; margin: 3px 0; }
   .journal-item .j-text { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
 
   .save-msg {
     font-size: 12px;
-    color: var(--success);
+    color: var(--income);
     height: 16px;
     margin-top: 6px;
   }
@@ -478,43 +557,54 @@
 <body>
   <div class="app">
     <header class="app-header">
-      <h1>ウェルネス<span class="accent">ダッシュボード</span></h1>
+      <div class="title-row">
+        <h1 class="disp">ウェルネス<span class="accent">ダッシュボード</span></h1>
+        <span class="today num" id="header-date"></span>
+      </div>
+      <div class="rule"></div>
     </header>
 
     <!-- Dashboard -->
     <section id="view-dashboard" class="view active">
       <div class="dashboard-grid">
         <button class="nav-card" data-target="goals">
-          <span class="icon">🎯</span>
-          <span class="info"><h2>ウェルネスゴール</h2><p>四半期の目標を管理</p></span>
+          <span class="swatch" style="background:var(--c-sage);"></span>
+          <span class="info"><h2>ウェルネスゴール</h2><p>四半期の目標</p></span>
         </button>
         <button class="nav-card" data-target="exercise">
-          <span class="icon">🏃</span>
-          <span class="info"><h2>運動</h2><p>週間の運動記録</p></span>
+          <span class="swatch" style="background:var(--c-gold);"></span>
+          <span class="info"><h2>運動</h2><p>週間スケジュール</p></span>
         </button>
         <button class="nav-card" data-target="habits">
-          <span class="icon">✅</span>
-          <span class="info"><h2>習慣トラッカー</h2><p>習慣とストリークを記録</p></span>
+          <span class="swatch" style="background:var(--c-slate);"></span>
+          <span class="info"><h2>習慣トラッカー</h2><p>毎日の積み重ね</p></span>
         </button>
         <button class="nav-card" data-target="finance">
-          <span class="icon">💰</span>
-          <span class="info"><h2>家計簿</h2><p>収支とカテゴリ別支出</p></span>
+          <span class="swatch" style="background:var(--c-terracotta);"></span>
+          <span class="info"><h2>家計簿</h2><p>収支の記録</p></span>
         </button>
         <button class="nav-card" data-target="mindfulness">
-          <span class="icon">🌿</span>
+          <span class="swatch" style="background:var(--c-moss);"></span>
           <span class="info"><h2>マインドフルネス</h2><p>感謝と今日の意図</p></span>
         </button>
         <button class="nav-card" data-target="journal">
-          <span class="icon">📔</span>
-          <span class="info"><h2>ジャーナリング</h2><p>問いに答えて振り返る</p></span>
+          <span class="swatch" style="background:var(--c-lavender);"></span>
+          <span class="info"><h2>ジャーナリング</h2><p>自分を振り返る</p></span>
         </button>
       </div>
     </section>
 
     <!-- Goals -->
     <section id="view-goals" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">ウェルネスゴール</h2>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-sage);"></span>
+          <span class="hero-en disp">My Wellness Goals</span>
+        </div>
+        <p class="hero-ja">ウェルネスゴール</p>
+        <p class="hero-desc">四半期ごとに目標を立て、達成できたらチェックしましょう。</p>
+      </div>
       <div class="tabs" id="goal-tabs">
         <button class="tab-btn active" data-quarter="Q1">Q1</button>
         <button class="tab-btn" data-quarter="Q2">Q2</button>
@@ -533,8 +623,15 @@
 
     <!-- Exercise -->
     <section id="view-exercise" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">運動</h2>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-gold);"></span>
+          <span class="hero-en disp">Fitness</span>
+        </div>
+        <p class="hero-ja">運動</p>
+        <p class="hero-desc">月曜から日曜まで、その日行った運動を記録します。</p>
+      </div>
       <div class="card">
         <div id="exercise-list"></div>
       </div>
@@ -542,8 +639,15 @@
 
     <!-- Habits -->
     <section id="view-habits" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">習慣トラッカー</h2>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-slate);"></span>
+          <span class="hero-en disp">Habit Tracker</span>
+        </div>
+        <p class="hero-ja">習慣トラッカー</p>
+        <p class="hero-desc">続けたい習慣を追加して、1週間のチェックでストリークを可視化します。</p>
+      </div>
       <div class="card">
         <form class="inline-form" id="habit-form">
           <input type="text" id="habit-input" placeholder="新しい習慣を入力..." maxlength="60" autocomplete="off">
@@ -556,8 +660,15 @@
 
     <!-- Finance -->
     <section id="view-finance" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">家計簿</h2>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-terracotta);"></span>
+          <span class="hero-en disp">Budget</span>
+        </div>
+        <p class="hero-ja">家計簿</p>
+        <p class="hero-desc">支出と収入を記録して、今月の収支とカテゴリ別の内訳を確認できます。</p>
+      </div>
 
       <div class="card">
         <form id="finance-form">
@@ -588,20 +699,20 @@
       </div>
 
       <div class="card">
-        <p class="section-title" style="font-size:15px;margin-bottom:10px;">今月の収支</p>
+        <p class="card-title">今月の収支</p>
         <div class="summary-row"><span class="label">収入</span><span class="value num" id="sum-income">¥0</span></div>
         <div class="summary-row"><span class="label">支出</span><span class="value num" id="sum-expense">¥0</span></div>
         <div class="summary-row total"><span class="label">収支</span><span class="value num" id="sum-net">¥0</span></div>
       </div>
 
       <div class="card">
-        <p class="section-title" style="font-size:15px;margin-bottom:6px;">カテゴリ別支出(今月)</p>
+        <p class="card-title">カテゴリ別支出(今月)</p>
         <div class="chart-wrap"><canvas id="category-chart"></canvas></div>
         <p class="empty-message" id="chart-empty" hidden>今月の支出データがありません</p>
       </div>
 
       <div class="card">
-        <p class="section-title" style="font-size:15px;margin-bottom:6px;">記録一覧</p>
+        <p class="card-title">記録一覧</p>
         <ul class="item-list" id="finance-list"></ul>
         <p class="empty-message" id="finance-empty" hidden>まだ記録がありません</p>
       </div>
@@ -609,9 +720,15 @@
 
     <!-- Mindfulness -->
     <section id="view-mindfulness" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">マインドフルネス</h2>
-      <p class="today-date num" id="mindful-date"></p>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-moss);"></span>
+          <span class="hero-en disp">Mindfulness</span>
+        </div>
+        <p class="hero-ja">マインドフルネス</p>
+        <p class="hero-desc" id="mindful-date"></p>
+      </div>
 
       <div class="card">
         <p class="field-label">今日感謝していること(3つ)</p>
@@ -629,13 +746,20 @@
 
     <!-- Journal -->
     <section id="view-journal" class="view">
-      <button class="back-btn" data-target="dashboard">← ダッシュボードに戻る</button>
-      <h2 class="section-title">ジャーナリング</h2>
+      <button class="back-btn" data-target="dashboard">← 戻る</button>
+      <div class="section-hero">
+        <div class="hero-top">
+          <span class="hero-swatch" style="background:var(--c-lavender);"></span>
+          <span class="hero-en disp">Journaling</span>
+        </div>
+        <p class="hero-ja">ジャーナリング</p>
+        <p class="hero-desc">今日の問いに答えて、自分の内面を振り返ります。</p>
+      </div>
 
       <div class="prompt-box">
         <p class="prompt-label">今日の問い</p>
         <p class="prompt-text" id="journal-prompt"></p>
-        <button class="secondary-btn" id="new-prompt-btn" style="background:transparent;border-color:var(--gold);color:var(--gold);">別の質問</button>
+        <button class="secondary-btn" id="new-prompt-btn">別の質問</button>
       </div>
 
       <div class="card">
@@ -644,7 +768,7 @@
       </div>
 
       <div class="card">
-        <p class="section-title" style="font-size:15px;margin-bottom:6px;">過去の記録</p>
+        <p class="card-title">過去の記録</p>
         <ul class="item-list" id="journal-list"></ul>
         <p class="empty-message" id="journal-empty" hidden>まだ記録がありません</p>
       </div>
@@ -732,6 +856,9 @@
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
+
+  /* ---------- Header ---------- */
+  document.getElementById("header-date").textContent = new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" });
 
   /* ---------- Navigation ---------- */
   function showView(name) {
@@ -953,7 +1080,7 @@
   });
   updateTypeToggleUI();
 
-  var CHART_COLORS = ["#E8A73B", "#16233F", "#C97B4A", "#7A8B99", "#3C8C5B", "#9C6ADE", "#4A6670", "#D4B483"];
+  var CHART_COLORS = ["#90A873", "#D9A23B", "#6C84A6", "#BE7748", "#7E9463", "#9A82B8", "#4B5A34", "#C9BFA0"];
 
   function fmtYen(n) {
     var sign = n < 0 ? "-" : "";
@@ -1008,7 +1135,15 @@
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, ticks: { callback: function (v) { return "¥" + v.toLocaleString("ja-JP"); } } }
+            x: {
+              beginAtZero: true,
+              ticks: { color: "#8A8677", callback: function (v) { return "¥" + v.toLocaleString("ja-JP"); } },
+              grid: { color: "rgba(28, 27, 23, 0.08)" }
+            },
+            y: {
+              ticks: { color: "#4A4838" },
+              grid: { display: false }
+            }
           }
         }
       });
@@ -1088,7 +1223,7 @@
 
   var mindfulSaveTimer = null;
   function initMindfulness() {
-    mindfulDateEl.textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+    mindfulDateEl.textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }) + "の記録";
     var entry = todayEntry();
     gratitude1.value = entry.gratitude[0] || "";
     gratitude2.value = entry.gratitude[1] || "";
