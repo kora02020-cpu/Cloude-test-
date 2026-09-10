@@ -327,7 +327,7 @@
     margin: 0 0 10px;
   }
 
-  /* Tabs (goals quarters) */
+  /* Tabs (goals weeks) */
   .tabs {
     display: flex;
     gap: 6px;
@@ -336,15 +336,27 @@
 
   .tab-btn {
     flex: 1;
-    padding: 8px 0;
-    font-size: 13px;
-    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
     border: 1px solid var(--border);
     background: var(--paper);
     color: var(--muted);
-    border-radius: 999px;
+    border-radius: 14px;
     cursor: pointer;
     font-family: "Space Grotesk", sans-serif;
+  }
+
+  .tab-btn .tab-main {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .tab-btn .tab-sub {
+    font-size: 10px;
+    opacity: 0.75;
   }
 
   .tab-btn.active {
@@ -699,7 +711,7 @@
         <button class="nav-card" data-target="mindfulness">
           <span class="card-head">
             <span class="swatch" style="background:var(--c-moss);"></span>
-            <span class="info"><h2>マインドフルネス</h2><p>感謝と今日の意図</p></span>
+            <span class="info"><h2>マインドフルネス</h2><p>できたこと・改善点</p></span>
           </span>
           <span class="card-stat">
             <span class="stat-row"><span class="stat-label" id="dash-mindful-label">-</span></span>
@@ -729,14 +741,9 @@
           <span class="hero-en disp">My Wellness Goals</span>
         </div>
         <p class="hero-ja">ウェルネスゴール</p>
-        <p class="hero-desc">四半期ごとに目標を立て、達成できたらチェックしましょう。</p>
+        <p class="hero-desc" id="goal-month-caption">今月を週ごとに区切って目標を立て、達成できたらチェックしましょう。</p>
       </div>
-      <div class="tabs" id="goal-tabs">
-        <button class="tab-btn active" data-quarter="Q1">Q1</button>
-        <button class="tab-btn" data-quarter="Q2">Q2</button>
-        <button class="tab-btn" data-quarter="Q3">Q3</button>
-        <button class="tab-btn" data-quarter="Q4">Q4</button>
-      </div>
+      <div class="tabs" id="goal-tabs"></div>
       <div class="card">
         <form class="inline-form" id="goal-form">
           <input type="text" id="goal-input" placeholder="新しいゴールを入力..." maxlength="120" autocomplete="off">
@@ -954,9 +961,32 @@
     return todayISO().slice(0, 7);
   }
 
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  function getMonthWeeks() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var weeks = [];
+    for (var d = 1; d <= daysInMonth; d += 7) {
+      var start = d;
+      var end = Math.min(d + 6, daysInMonth);
+      var n = weeks.length + 1;
+      weeks.push({ n: n, start: start, end: end, key: year + "-" + pad2(month + 1) + "-W" + n });
+    }
+    return { year: year, month: month, weeks: weeks };
+  }
+
+  function currentWeekInfo() {
+    var mw = getMonthWeeks();
+    var today = new Date().getDate();
+    var week = mw.weeks.filter(function (w) { return today >= w.start && today <= w.end; })[0] || mw.weeks[mw.weeks.length - 1];
+    return { year: mw.year, month: mw.month, weeks: mw.weeks, week: week };
+  }
+
   function defaultData() {
     var goals = {};
-    ["Q1", "Q2", "Q3", "Q4"].forEach(function (q) { goals[q] = []; });
 
     var exercise = {};
     DAY_KEYS.forEach(function (d) { exercise[d] = { text: "", done: false }; });
@@ -1008,23 +1038,41 @@
   });
 
   /* ---------- Goals ---------- */
-  var currentQuarter = "Q1";
   var goalForm = document.getElementById("goal-form");
   var goalInput = document.getElementById("goal-input");
   var goalList = document.getElementById("goal-list");
   var goalEmpty = document.getElementById("goal-empty");
+  var goalTabsWrap = document.getElementById("goal-tabs");
+  var goalMonthCaption = document.getElementById("goal-month-caption");
 
-  document.querySelectorAll("#goal-tabs .tab-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      document.querySelectorAll("#goal-tabs .tab-btn").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      currentQuarter = btn.dataset.quarter;
-      renderGoals();
+  var goalMonthInfo = currentWeekInfo();
+  var currentWeekKey = goalMonthInfo.week.key;
+
+  function initGoalTabs() {
+    goalMonthCaption.textContent = (goalMonthInfo.month + 1) + "月を週ごとに区切って目標を立て、達成できたらチェックしましょう。";
+    goalTabsWrap.innerHTML = "";
+    goalMonthInfo.weeks.forEach(function (w) {
+      var btn = document.createElement("button");
+      btn.className = "tab-btn" + (w.key === currentWeekKey ? " active" : "");
+      var main = document.createElement("span");
+      main.className = "tab-main";
+      main.textContent = "第" + w.n + "週";
+      var sub = document.createElement("span");
+      sub.className = "tab-sub num";
+      sub.textContent = (goalMonthInfo.month + 1) + "/" + w.start + "–" + (goalMonthInfo.month + 1) + "/" + w.end;
+      btn.append(main, sub);
+      btn.addEventListener("click", function () {
+        goalTabsWrap.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        currentWeekKey = w.key;
+        renderGoals();
+      });
+      goalTabsWrap.appendChild(btn);
     });
-  });
+  }
 
   function renderGoals() {
-    var goals = data.goals[currentQuarter] || [];
+    var goals = data.goals[currentWeekKey] || [];
     goalList.innerHTML = "";
     goals.forEach(function (g) {
       var li = document.createElement("li");
@@ -1049,7 +1097,7 @@
       del.textContent = "✕";
       del.setAttribute("aria-label", "削除");
       del.addEventListener("click", function () {
-        data.goals[currentQuarter] = data.goals[currentQuarter].filter(function (x) { return x.id !== g.id; });
+        data.goals[currentWeekKey] = data.goals[currentWeekKey].filter(function (x) { return x.id !== g.id; });
         save();
         renderGoals();
       });
@@ -1064,7 +1112,8 @@
     e.preventDefault();
     var text = goalInput.value.trim();
     if (!text) return;
-    data.goals[currentQuarter].unshift({ id: uid(), text: text, done: false });
+    if (!data.goals[currentWeekKey]) data.goals[currentWeekKey] = [];
+    data.goals[currentWeekKey].unshift({ id: uid(), text: text, done: false });
     save();
     goalInput.value = "";
     renderGoals();
@@ -1436,14 +1485,11 @@
 
   /* ---------- Dashboard summary ---------- */
   function renderDashboard() {
-    var totalGoals = 0, doneGoals = 0;
-    ["Q1", "Q2", "Q3", "Q4"].forEach(function (q) {
-      var arr = data.goals[q] || [];
-      totalGoals += arr.length;
-      doneGoals += arr.filter(function (g) { return g.done; }).length;
-    });
+    var thisWeekGoals = data.goals[currentWeekInfo().week.key] || [];
+    var totalGoals = thisWeekGoals.length;
+    var doneGoals = thisWeekGoals.filter(function (g) { return g.done; }).length;
     document.getElementById("dash-goal-bar").style.width = (totalGoals ? Math.round(doneGoals / totalGoals * 100) : 0) + "%";
-    document.getElementById("dash-goal-label").textContent = totalGoals ? (doneGoals + "/" + totalGoals + " 達成") : "まだ目標がありません";
+    document.getElementById("dash-goal-label").textContent = totalGoals ? (doneGoals + "/" + totalGoals + " 今週の目標") : "今週の目標はまだありません";
 
     var exDoneCount = 0;
     var dotsWrap = document.getElementById("dash-exercise-dots");
@@ -1520,6 +1566,7 @@
   }
 
   /* ---------- Init ---------- */
+  initGoalTabs();
   renderGoals();
   renderExercise();
   renderHabits();
