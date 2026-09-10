@@ -985,38 +985,60 @@
 
   function pad2(n) { return String(n).padStart(2, "0"); }
 
+  function isoOf(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  function mondayOf(date) {
+    var dow = date.getDay();
+    var offset = dow === 0 ? -6 : 1 - dow;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset);
+  }
+
+  function addDays(date, n) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+  }
+
+  /* Real Monday-Sunday calendar weeks overlapping the current month */
   function getMonthWeeks() {
     var now = new Date();
     var year = now.getFullYear();
     var month = now.getMonth();
-    var daysInMonth = new Date(year, month + 1, 0).getDate();
+    var lastDay = new Date(year, month + 1, 0);
+    var cursor = mondayOf(new Date(year, month, 1));
     var weeks = [];
-    for (var d = 1; d <= daysInMonth; d += 7) {
-      var start = d;
-      var end = Math.min(d + 6, daysInMonth);
-      var n = weeks.length + 1;
-      weeks.push({ n: n, start: start, end: end, key: year + "-" + pad2(month + 1) + "-W" + n });
+    var n = 1;
+    while (cursor <= lastDay) {
+      var end = addDays(cursor, 6);
+      weeks.push({
+        n: n,
+        monday: cursor,
+        key: "W" + isoOf(cursor),
+        startLabel: (cursor.getMonth() + 1) + "/" + cursor.getDate(),
+        endLabel: (end.getMonth() + 1) + "/" + end.getDate()
+      });
+      n++;
+      cursor = addDays(cursor, 7);
     }
     return { year: year, month: month, weeks: weeks };
   }
 
   function currentWeekInfo() {
     var mw = getMonthWeeks();
-    var today = new Date().getDate();
-    var week = mw.weeks.filter(function (w) { return today >= w.start && today <= w.end; })[0] || mw.weeks[mw.weeks.length - 1];
+    var todayD = new Date();
+    var today = new Date(todayD.getFullYear(), todayD.getMonth(), todayD.getDate());
+    var week = mw.weeks.filter(function (w) {
+      return today >= w.monday && today <= addDays(w.monday, 6);
+    })[0] || mw.weeks[mw.weeks.length - 1];
     return { year: mw.year, month: mw.month, weeks: mw.weeks, week: week };
   }
 
   function getCurrentCalendarWeek() {
-    var today = new Date();
-    var dow = today.getDay();
-    var mondayOffset = dow === 0 ? -6 : 1 - dow;
-    var monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + mondayOffset);
+    var monday = mondayOf(new Date());
     var todayKey = todayISO();
     return DAY_KEYS.map(function (key, i) {
-      var d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
-      var iso = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-      return { key: key, label: (d.getMonth() + 1) + "/" + d.getDate(), isToday: iso === todayKey };
+      var d = addDays(monday, i);
+      return { key: key, label: (d.getMonth() + 1) + "/" + d.getDate(), isToday: isoOf(d) === todayKey };
     });
   }
 
@@ -1094,7 +1116,7 @@
       main.textContent = "第" + w.n + "週";
       var sub = document.createElement("span");
       sub.className = "tab-sub num";
-      sub.textContent = (goalMonthInfo.month + 1) + "/" + w.start + "–" + (goalMonthInfo.month + 1) + "/" + w.end;
+      sub.textContent = w.startLabel + "–" + w.endLabel;
       btn.append(main, sub);
       btn.addEventListener("click", function () {
         goalTabsWrap.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
