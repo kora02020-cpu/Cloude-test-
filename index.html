@@ -474,13 +474,27 @@
   .exercise-row:last-child { border-bottom: none; }
 
   .exercise-row .day-label {
-    width: 34px;
+    width: 44px;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.25;
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .exercise-row .day-label .day-date {
     font-weight: 700;
     font-size: 13px;
-    font-family: "Space Grotesk", sans-serif;
     color: var(--olive);
   }
+
+  .exercise-row .day-label .day-name {
+    font-size: 10.5px;
+    color: var(--muted);
+  }
+
+  .exercise-row.is-today .day-label .day-date { color: var(--c-gold); }
 
   .exercise-row input[type="text"] { flex: 1; }
 
@@ -526,10 +540,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     font-size: 11px;
     color: var(--muted);
   }
+
+  .week-checks label .wd-date {
+    font-size: 9px;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--muted);
+  }
+
+  .week-checks label.is-today .wd-name { color: var(--c-gold); font-weight: 700; }
 
   .week-checks input[type="checkbox"] {
     width: 20px;
@@ -985,6 +1007,19 @@
     return { year: mw.year, month: mw.month, weeks: mw.weeks, week: week };
   }
 
+  function getCurrentCalendarWeek() {
+    var today = new Date();
+    var dow = today.getDay();
+    var mondayOffset = dow === 0 ? -6 : 1 - dow;
+    var monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + mondayOffset);
+    var todayKey = todayISO();
+    return DAY_KEYS.map(function (key, i) {
+      var d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+      var iso = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+      return { key: key, label: (d.getMonth() + 1) + "/" + d.getDate(), isToday: iso === todayKey };
+    });
+  }
+
   function defaultData() {
     var goals = {};
 
@@ -1124,14 +1159,22 @@
 
   function renderExercise() {
     exerciseList.innerHTML = "";
-    DAY_KEYS.forEach(function (day) {
+    var week = getCurrentCalendarWeek();
+    week.forEach(function (w) {
+      var day = w.key;
       var entry = data.exercise[day];
       var row = document.createElement("div");
-      row.className = "exercise-row";
+      row.className = "exercise-row" + (w.isToday ? " is-today" : "");
 
       var label = document.createElement("span");
-      label.className = "day-label num";
-      label.textContent = DAY_LABELS[day];
+      label.className = "day-label";
+      var dateSpan = document.createElement("span");
+      dateSpan.className = "day-date num";
+      dateSpan.textContent = w.label;
+      var nameSpan = document.createElement("span");
+      nameSpan.className = "day-name";
+      nameSpan.textContent = DAY_LABELS[day] + "曜";
+      label.append(dateSpan, nameSpan);
 
       var input = document.createElement("input");
       input.type = "text";
@@ -1207,10 +1250,18 @@
 
       var week = document.createElement("div");
       week.className = "week-checks";
-      DAY_KEYS.forEach(function (day) {
+      var weekDates = getCurrentCalendarWeek();
+      weekDates.forEach(function (w) {
+        var day = w.key;
         var label = document.createElement("label");
+        if (w.isToday) label.className = "is-today";
+        var dateSpan = document.createElement("span");
+        dateSpan.className = "wd-date";
+        dateSpan.textContent = w.label;
         var span = document.createElement("span");
+        span.className = "wd-name";
         span.textContent = DAY_LABELS[day];
+        label.append(dateSpan, span);
         var cb = document.createElement("input");
         cb.type = "checkbox";
         cb.checked = !!h.checks[day];
@@ -1219,7 +1270,7 @@
           save();
           renderHabits();
         });
-        label.append(span, cb);
+        label.append(cb);
         week.appendChild(label);
       });
 
