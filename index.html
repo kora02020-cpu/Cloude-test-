@@ -632,6 +632,8 @@
     margin: 0 0 6px;
   }
 
+  .gratitude-input { margin-bottom: 8px; }
+
   textarea { resize: vertical; min-height: 90px; font-family: inherit; }
 
   .prompt-box {
@@ -733,7 +735,7 @@
         <button class="nav-card" data-target="mindfulness">
           <span class="card-head">
             <span class="swatch" style="background:var(--c-moss);"></span>
-            <span class="info"><h2>マインドフルネス</h2><p>できたこと・改善点</p></span>
+            <span class="info"><h2>マインドフルネス</h2><p>感謝・気分・今日の意図</p></span>
           </span>
           <span class="card-stat">
             <span class="stat-row"><span class="stat-label" id="dash-mindful-label">-</span></span>
@@ -894,13 +896,20 @@
       </div>
 
       <div class="card">
-        <p class="field-label">今日できたこと</p>
-        <textarea id="good-input" placeholder="今日うまくできたことを書きましょう..."></textarea>
+        <p class="field-label">今日感謝していること(3つ)</p>
+        <input type="text" class="gratitude-input" id="gratitude-1" placeholder="1つ目" maxlength="120">
+        <input type="text" class="gratitude-input" id="gratitude-2" placeholder="2つ目" maxlength="120">
+        <input type="text" class="gratitude-input" id="gratitude-3" placeholder="3つ目" maxlength="120">
       </div>
 
       <div class="card">
-        <p class="field-label">今日の改善できること</p>
-        <textarea id="improve-input" placeholder="次はどうすればもっと良くなるか考えてみましょう..."></textarea>
+        <p class="field-label">今の気分・体の状態</p>
+        <textarea id="mood-input" placeholder="良い悪いを判断せず、今感じていることをそのまま書いてみましょう..."></textarea>
+      </div>
+
+      <div class="card">
+        <p class="field-label">今日の意図</p>
+        <textarea id="intention-input" placeholder="今日、どう在りたいか・大切にしたいことは..."></textarea>
         <p class="save-msg" id="mindful-save-msg"></p>
       </div>
       </div>
@@ -1465,14 +1474,17 @@
 
   /* ---------- Mindfulness ---------- */
   var mindfulDateEl = document.getElementById("mindful-date");
-  var goodInput = document.getElementById("good-input");
-  var improveInput = document.getElementById("improve-input");
+  var gratitude1 = document.getElementById("gratitude-1");
+  var gratitude2 = document.getElementById("gratitude-2");
+  var gratitude3 = document.getElementById("gratitude-3");
+  var moodInput = document.getElementById("mood-input");
+  var intentionInput = document.getElementById("intention-input");
   var mindfulSaveMsg = document.getElementById("mindful-save-msg");
 
   function todayEntry() {
     var key = todayISO();
     if (!data.mindfulness[key]) {
-      data.mindfulness[key] = { good: "", improve: "" };
+      data.mindfulness[key] = { gratitude: ["", "", ""], mood: "", intention: "" };
     }
     return data.mindfulness[key];
   }
@@ -1481,20 +1493,24 @@
   function initMindfulness() {
     mindfulDateEl.textContent = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }) + "の記録";
     var entry = todayEntry();
-    goodInput.value = entry.good || "";
-    improveInput.value = entry.improve || "";
+    gratitude1.value = entry.gratitude[0] || "";
+    gratitude2.value = entry.gratitude[1] || "";
+    gratitude3.value = entry.gratitude[2] || "";
+    moodInput.value = entry.mood || "";
+    intentionInput.value = entry.intention || "";
 
     function persistMindful() {
       var e = todayEntry();
-      e.good = goodInput.value;
-      e.improve = improveInput.value;
+      e.gratitude = [gratitude1.value, gratitude2.value, gratitude3.value];
+      e.mood = moodInput.value;
+      e.intention = intentionInput.value;
       save();
       mindfulSaveMsg.textContent = "保存しました";
       clearTimeout(mindfulSaveTimer);
       mindfulSaveTimer = setTimeout(function () { mindfulSaveMsg.textContent = ""; }, 1500);
     }
 
-    [goodInput, improveInput].forEach(function (el) {
+    [gratitude1, gratitude2, gratitude3, moodInput, intentionInput].forEach(function (el) {
       el.addEventListener("input", persistMindful);
     });
   }
@@ -1613,10 +1629,12 @@
       });
     }
 
-    var mEntry = data.mindfulness[todayISO()] || { good: "", improve: "" };
-    var filledCount = (mEntry.good && mEntry.good.trim() ? 1 : 0) + (mEntry.improve && mEntry.improve.trim() ? 1 : 0);
-    document.getElementById("dash-mindful-bar").style.width = Math.round(filledCount / 2 * 100) + "%";
-    document.getElementById("dash-mindful-label").textContent = filledCount + "/2 記入済み";
+    var mEntry = data.mindfulness[todayISO()] || { gratitude: ["", "", ""], mood: "", intention: "" };
+    var filledCount = mEntry.gratitude.filter(function (g) { return g && g.trim(); }).length
+      + (mEntry.mood && mEntry.mood.trim() ? 1 : 0)
+      + (mEntry.intention && mEntry.intention.trim() ? 1 : 0);
+    document.getElementById("dash-mindful-bar").style.width = Math.round(filledCount / 5 * 100) + "%";
+    document.getElementById("dash-mindful-label").textContent = filledCount + "/5 記入済み";
 
     document.getElementById("dash-journal-count").textContent = data.journal.length;
     var barsWrap = document.getElementById("dash-journal-bars");
