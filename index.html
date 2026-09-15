@@ -1084,6 +1084,49 @@
 
   var data = loadData();
 
+  /* ---------- Legacy data migration ----------
+     Earlier versions of this app used different shapes/keys for goals
+     and mindfulness. Without this, loading an old entry can throw and
+     abort the rest of init (dashboard/journal never render), which
+     looks like all data disappeared even though it is still saved. */
+  function migrateLegacyData() {
+    var changed = false;
+
+    var legacyWeek = /^(\d{4})-(\d{2})-W(\d+)$/;
+    Object.keys(data.goals).forEach(function (k) {
+      var m = k.match(legacyWeek);
+      if (!m) return;
+      var year = Number(m[1]);
+      var month = Number(m[2]) - 1;
+      var weekN = Number(m[3]);
+      var chunkStart = new Date(year, month, (weekN - 1) * 7 + 1);
+      var newKey = "W" + isoOf(mondayOf(chunkStart));
+      var oldGoals = data.goals[k] || [];
+      delete data.goals[k];
+      if (oldGoals.length) {
+        data.goals[newKey] = (data.goals[newKey] || []).concat(oldGoals);
+        changed = true;
+      }
+    });
+
+    Object.keys(data.mindfulness).forEach(function (k) {
+      var entry = data.mindfulness[k] || {};
+      var gratitude = Array.isArray(entry.gratitude) ? entry.gratitude.slice(0, 3) : ["", "", ""];
+      while (gratitude.length < 3) gratitude.push("");
+      var mood = typeof entry.mood === "string" ? entry.mood : "";
+      var intention = typeof entry.intention === "string" ? entry.intention : "";
+      if (!mood && typeof entry.good === "string" && entry.good) mood = entry.good;
+      if (!intention && typeof entry.improve === "string" && entry.improve) intention = entry.improve;
+      var normalized = { gratitude: gratitude, mood: mood, intention: intention };
+      if (JSON.stringify(normalized) !== JSON.stringify(entry)) changed = true;
+      data.mindfulness[k] = normalized;
+    });
+
+    return changed;
+  }
+
+  if (migrateLegacyData()) save();
+
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
