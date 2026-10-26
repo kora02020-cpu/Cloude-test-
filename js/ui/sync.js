@@ -4,6 +4,7 @@ import { $ } from './dom.js';
 
 const LABELS = {
   local: '端末に保存',
+  connecting: '接続中…',
   saved: '保存済み',
   saving: '保存中…',
   offline: 'オフライン',
@@ -45,6 +46,18 @@ function renderDialog(ctx) {
     body.innerHTML = `${head}
       <p>同期は未設定です。記録はこの端末の中にだけ保存されています。</p>
       <p class="note">端末をまたいで使うには、README の「同期の設定」に沿って <code>js/config.js</code> に Supabase の URL とキーを設定してください。設定前の記録も、ログイン後にまとめて送られます(未送信 ${pending} 件)。</p>`;
+    return;
+  }
+
+  if (adapter.kind === 'claude') {
+    body.innerHTML = `${head}
+      <p>claude.ai のアカウントで同期しています。同じアカウントで開いた iPhone と iPad に、同じ記録が表示されます。</p>
+      <dl class="kv">
+        <dt>状態</dt><dd>${esc(LABELS[s.state] || s.state)}${s.message ? `(${esc(s.message)})` : ''}</dd>
+        <dt>未送信</dt><dd>${pending} 件</dd>
+      </dl>
+      <div class="btn-row"><button class="btn primary" type="button" id="sync-now">今すぐ同期</button></div>`;
+    $('#sync-now').addEventListener('click', () => ctx.sync.syncNow());
     return;
   }
 

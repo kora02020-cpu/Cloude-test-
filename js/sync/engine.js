@@ -9,10 +9,17 @@ export function startSync(store, adapter) {
 
   function idleState() {
     if (!adapter.enabled) return 'local';
+    const s = adapter.state?.();
+    if (s === 'unavailable') return 'local';
+    if (s === 'connecting') return 'connecting';
     if (!navigator.onLine) return 'offline';
     if (!adapter.signedIn()) return 'signedout';
     return null;
   }
+
+  // 同期先がリアルタイムで変更を届けてくれる場合は、届いた時点で取り込む
+  if ('onRemote' in adapter) adapter.onRemote = (records) => store.applyRemote(records);
+  if ('onReady' in adapter) adapter.onReady = () => schedule(0);
 
   async function run() {
     if (running) { queued = true; return; }

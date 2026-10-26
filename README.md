@@ -89,6 +89,14 @@ GitHub Pages などで HTTPS 公開したページを Safari で開き、共有�
 
 ---
 
+## claude.ai のページとして使う(Supabase 不要)
+
+claude.ai 上の非公開ページとして公開すると、そのページのデータ保存機能で iPhone と iPad の記録がそろいます。この場合 Supabase の設定はいりません。
+
+- 1ファイル版を作る:`npm install` のあと `npm run build:artifact`(`dist/today-board.html` ができる)
+- 同期先:閲覧している本人だけが読み書きできる領域(`data/users/<本人のID>/`)に、「種類 × 月」ごとにまとめて保存します。
+- 制限:オフライン起動はできません。ホーム画面から開くと Safari の画面になります(全画面表示にはなりません)。
+
 ## ステップ3:同期の設定(Supabase)
 
 ### Supabase を選んだ理由

@@ -4,6 +4,8 @@ import { ymd } from './lib/date.js';
 import { createStore } from './store/store.js';
 import { startSync } from './sync/engine.js';
 import { createNoneAdapter } from './sync/none.js';
+import { createSupabaseAdapter } from './sync/supabase.js';
+import { createClaudeDbAdapter } from './sync/claude-db.js';
 import * as header from './ui/header.js';
 import * as visits from './ui/visits.js';
 import * as orders from './ui/orders.js';
@@ -12,9 +14,16 @@ import * as syncUi from './ui/sync.js';
 
 const store = createStore();
 
-const adapter = SYNC.supabaseUrl && SYNC.supabaseKey
-  ? (await import('./sync/supabase.js')).createSupabaseAdapter({ url: SYNC.supabaseUrl, key: SYNC.supabaseKey })
-  : createNoneAdapter();
+// 同期先:Supabase の設定があればそれ、claude.ai のページとして開いていれば
+// そのページの保存領域、どちらでもなければ端末内のみ
+function pickAdapter() {
+  if (SYNC.supabaseUrl && SYNC.supabaseKey) {
+    return createSupabaseAdapter({ url: SYNC.supabaseUrl, key: SYNC.supabaseKey });
+  }
+  if (typeof window.claude?.use === 'function') return createClaudeDbAdapter();
+  return createNoneAdapter();
+}
+const adapter = pickAdapter();
 
 const ctx = { store, now: () => new Date(), sync: null };
 const views = [header, visits, orders, money];

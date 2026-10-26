@@ -4,6 +4,10 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "start": "python3 -m http.server 8080"
+    "start": "python3 -m http.server 8080",
+    "build:artifact": "node tools/build-artifact.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
   }
 }

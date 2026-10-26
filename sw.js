@@ -1,7 +1,7 @@
 // オフラインでも起動できるようにするための Service Worker。
 // アプリ本体はネット優先(3秒で諦めてキャッシュ)、フォントはキャッシュ優先。
 // 同期先(Supabase)への通信はキャッシュしない。
-const VERSION = 'board-v3';
+const VERSION = 'board-v4';
 const SHELL = [
   './',
   'index.html',
@@ -17,6 +17,7 @@ const SHELL = [
   'js/sync/engine.js',
   'js/sync/none.js',
   'js/sync/supabase.js',
+  'js/sync/claude-db.js',
   'js/ui/dom.js',
   'js/ui/header.js',
   'js/ui/visits.js',
