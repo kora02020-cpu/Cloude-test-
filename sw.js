@@ -1,7 +1,7 @@
 // オフラインでも起動できるようにするための Service Worker。
 // アプリ本体はネット優先(3秒で諦めてキャッシュ)、フォントはキャッシュ優先。
 // 同期先(Supabase)への通信はキャッシュしない。
-const VERSION = 'board-v2';
+const VERSION = 'board-v3';
 const SHELL = [
   './',
   'index.html',
