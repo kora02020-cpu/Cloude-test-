@@ -1,42 +1,170 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Todoリスト</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>今日のボード</title>
+  <meta name="theme-color" content="#0e1116">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ボード">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <main class="app">
-    <h1>Todoリスト</h1>
+  <header class="top">
+    <div class="top-title">
+      <h1>今日のボード</h1>
+      <p class="top-date" id="today-en"></p>
+    </div>
+    <div class="top-side">
+      <span class="pill" id="payday"></span>
+      <button class="sync" id="sync-status" type="button" aria-haspopup="dialog">
+        <span class="sync-dot" aria-hidden="true"></span><span class="sync-label">…</span>
+      </button>
+    </div>
+  </header>
 
-    <form id="todo-form" class="todo-form">
-      <input
-        type="text"
-        id="todo-input"
-        placeholder="タスクを入力..."
-        autocomplete="off"
-        maxlength="200"
-      >
-      <button type="submit">追加</button>
-    </form>
+  <main class="layout">
+    <div class="col">
+      <!-- 訪問 -->
+      <section class="card" id="visits" aria-labelledby="visits-title">
+        <div class="card-head">
+          <p class="eyebrow">TODAY</p>
+          <h2 id="visits-title">訪問</h2>
+        </div>
+        <div class="tiles" id="visit-tiles"></div>
 
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">すべて</button>
-      <button class="filter-btn" data-filter="active">未完了</button>
-      <button class="filter-btn" data-filter="completed">完了済み</button>
+        <div class="section">
+          <div class="section-head">
+            <h3>今週</h3>
+            <p class="legend" id="week-legend"></p>
+            <button class="link-btn" type="button" id="week-toggle" aria-pressed="false">表</button>
+          </div>
+          <div class="chart" id="week-chart"></div>
+          <div class="table-wrap" id="week-table" hidden></div>
+          <p class="caption" id="week-caption" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <!-- 受注ポイント -->
+      <section class="card" id="orders" aria-labelledby="orders-title">
+        <div class="card-head">
+          <p class="eyebrow">MONTH</p>
+          <h2 id="orders-title">受注ポイント</h2>
+        </div>
+        <div id="orders-summary"></div>
+        <div class="commission" id="orders-commission"></div>
+
+        <details class="tiers">
+          <summary>歩合表を見る</summary>
+          <div class="table-wrap tiers-wrap" id="tier-table"></div>
+        </details>
+
+        <div class="section">
+          <h3>受注を追加</h3>
+          <form class="form" id="order-form" novalidate>
+            <div class="row">
+              <label class="field">
+                <span>日付</span>
+                <input type="date" name="date" required>
+              </label>
+              <label class="field">
+                <span>ポイント</span>
+                <input type="text" name="points" inputmode="decimal" autocomplete="off" placeholder="例 12" required>
+              </label>
+            </div>
+            <label class="field">
+              <span>メモ</span>
+              <input type="text" name="note" autocomplete="off" placeholder="任意">
+            </label>
+            <p class="form-msg" aria-live="polite"></p>
+            <button class="btn primary block" type="submit">受注を追加</button>
+          </form>
+        </div>
+
+        <div class="section">
+          <h3 id="orders-list-title">今月の受注</h3>
+          <ul class="list" id="orders-list" aria-labelledby="orders-list-title"></ul>
+        </div>
+
+        <div class="section">
+          <form class="form inline" id="goal-form" novalidate>
+            <label class="field">
+              <span>今月の目標(pt)</span>
+              <input type="text" name="goal" inputmode="decimal" autocomplete="off">
+            </label>
+            <button class="btn ghost" type="submit">目標を保存</button>
+            <p class="form-msg" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
     </div>
 
-    <ul id="todo-list" class="todo-list"></ul>
+    <div class="col">
+      <!-- お金 -->
+      <section class="card" id="money" aria-labelledby="money-title">
+        <div class="card-head">
+          <p class="eyebrow">CYCLE</p>
+          <h2 id="money-title">支出</h2>
+        </div>
+        <div id="money-summary"></div>
 
-    <p id="empty-message" class="empty-message" hidden>タスクはありません</p>
+        <div class="section">
+          <h3>支出を追加</h3>
+          <form class="form" id="expense-form" novalidate>
+            <div class="row">
+              <label class="field">
+                <span>金額(円)</span>
+                <input type="text" name="amount" inputmode="numeric" autocomplete="off" placeholder="例 1200" required>
+              </label>
+              <label class="field">
+                <span>日付</span>
+                <input type="date" name="date" required>
+              </label>
+            </div>
+            <fieldset class="cats">
+              <legend>カテゴリ</legend>
+              <div class="cat-options" id="cat-options"></div>
+            </fieldset>
+            <label class="field">
+              <span>メモ</span>
+              <input type="text" name="note" autocomplete="off" placeholder="任意">
+            </label>
+            <p class="form-msg" aria-live="polite"></p>
+            <button class="btn primary block" type="submit">支出を追加</button>
+          </form>
+        </div>
 
-    <div class="footer">
-      <span id="remaining-count">0件のタスク</span>
-      <button id="clear-completed" class="clear-btn">完了済みを削除</button>
+        <div class="section">
+          <h3 id="expense-list-title">直近の支出</h3>
+          <ul class="list" id="expense-list" aria-labelledby="expense-list-title"></ul>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h3>期ごとの推移</h3>
+            <button class="link-btn" type="button" id="trend-toggle" aria-pressed="false">表</button>
+          </div>
+          <div class="chart" id="trend-chart"></div>
+          <div class="table-wrap" id="trend-table" hidden></div>
+          <p class="caption" id="trend-caption" aria-live="polite"></p>
+          <div id="trend-breakdown"></div>
+        </div>
+      </section>
     </div>
   </main>
 
-  <script src="script.js"></script>
+  <dialog class="sheet" id="sync-dialog" aria-labelledby="sync-dialog-title">
+    <div class="sheet-body" id="sync-dialog-body"></div>
+  </dialog>
 </body>
 </html>
