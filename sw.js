@@ -1,7 +1,7 @@
 // オフラインでも起動できるようにするための Service Worker。
 // アプリ本体はネット優先(3秒で諦めてキャッシュ)、フォントはキャッシュ優先。
 // 同期先(Supabase)への通信はキャッシュしない。
-const VERSION = 'board-v4';
+const VERSION = 'board-v5';
 const SHELL = [
   './',
   'index.html',
@@ -23,6 +23,7 @@ const SHELL = [
   'js/ui/visits.js',
   'js/ui/orders.js',
   'js/ui/money.js',
+  'js/ui/fixed.js',
   'js/ui/sync.js',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',

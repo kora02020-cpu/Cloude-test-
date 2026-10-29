@@ -5,7 +5,11 @@
 // 「種類 × 月」ごとに1ドキュメントへまとめる(例:expense~2026-10)。
 //   { records: { <id>: { data, updatedAt, deleted } } }
 // 追記は update の入れ子マージで行うので、別端末の追記を消さない。
-const bucketOf = (r) => `${r.kind}~${String(r.data?.date || r.data?.month || r.id).slice(0, 7)}`;
+// 日付を持たない種類(固定費の一覧など)は「種類~all」にまとめる
+const bucketOf = (r) => {
+  const key = r.data?.date || r.data?.month;
+  return key ? `${r.kind}~${String(key).slice(0, 7)}` : `${r.kind}~all`;
+};
 
 export function createClaudeDbAdapter() {
   let state = 'connecting'; // connecting / ready / unavailable
@@ -34,15 +38,19 @@ export function createClaudeDbAdapter() {
       const uid = db && user ? await user.id() : null;
       if (!uid) { state = 'unavailable'; onReady(); return; }
       col = db.collection(`data/users/${uid}`);
+      // 最初の受信が済むまでは送らない(サーバーの新しい記録を古い記録で上書きしないため)
       col.onSnapshot((snap) => {
         latest = flatten(snap.docs);
         onRemote(latest);
-      }, () => { /* 購読が切れても、記録と送信は続けられる */ });
-      state = 'ready';
+        if (state === 'connecting') { state = 'ready'; onReady(); }
+      }, () => {
+        // 購読が切れても、記録は端末に残る。最初から受信できなければ同期なしで動く
+        if (state === 'connecting') { state = 'unavailable'; onReady(); }
+      });
     } catch {
       state = 'unavailable';
+      onReady();
     }
-    onReady();
   })();
 
   async function writeBucket(key, recs) {
@@ -68,8 +76,11 @@ export function createClaudeDbAdapter() {
     set onReady(fn) { onReady = fn; },
 
     async push(records) {
+      // サーバー側の方が新しい記録は送らない(後勝ち)
+      const newer = new Map(latest.map((r) => [`${r.kind}:${r.id}`, r.updatedAt]));
       const groups = new Map();
       for (const r of records) {
+        if ((newer.get(`${r.kind}:${r.id}`) || '') >= r.updatedAt) continue;
         const k = bucketOf(r);
         if (!groups.has(k)) groups.set(k, []);
         groups.get(k).push(r);

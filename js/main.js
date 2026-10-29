@@ -10,6 +10,7 @@ import * as header from './ui/header.js';
 import * as visits from './ui/visits.js';
 import * as orders from './ui/orders.js';
 import * as money from './ui/money.js';
+import * as fixed from './ui/fixed.js';
 import * as syncUi from './ui/sync.js';
 
 const store = createStore();
@@ -26,12 +27,13 @@ function pickAdapter() {
 const adapter = pickAdapter();
 
 const ctx = { store, now: () => new Date(), sync: null };
-const views = [header, visits, orders, money];
+const views = [header, visits, orders, money, fixed];
 
 for (const v of views) v.mount?.(ctx);
 const renderAll = () => { for (const v of views) v.render(ctx); };
-store.subscribe(renderAll);
-renderAll();
+// 固定費の自動追加で記録が増えたときは、その通知でもう一度描画される
+store.subscribe(() => { if (!fixed.generate(ctx)) renderAll(); });
+if (!fixed.generate(ctx)) renderAll();
 
 syncUi.mount(ctx);
 ctx.sync = startSync(store, adapter);
@@ -44,7 +46,7 @@ function checkDay() {
   day = d;
   orders.resetDates(ctx);
   money.resetDates(ctx);
-  renderAll();
+  if (!fixed.generate(ctx)) renderAll();
 }
 setInterval(checkDay, 30 * 1000);
 document.addEventListener('visibilitychange', () => {

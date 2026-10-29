@@ -34,6 +34,28 @@ export function createStore() {
       write(kind, String(id), data, false);
     },
 
+    // 削除済みも含めて、記録があるか
+    has(kind, id) {
+      return !!records[keyOf(kind, id)];
+    },
+
+    // まだ無い記録だけを、指定の updatedAt で書く(自動で作る記録用)。
+    // updatedAt を古くしておくと、別の端末での削除・変更の方が優先される
+    seedMany(list) {
+      const fresh = list.filter((r) => !records[keyOf(r.kind, r.id)]);
+      if (!fresh.length) return false;
+      for (const r of fresh) {
+        const k = keyOf(r.kind, r.id);
+        records[k] = { kind: r.kind, id: String(r.id), data: r.data, updatedAt: r.updatedAt, deleted: false };
+        outbox[k] = r.updatedAt;
+      }
+      local.saveRecords(records);
+      local.saveOutbox(outbox);
+      emit();
+      store.onLocalWrite();
+      return true;
+    },
+
     remove(kind, id) {
       const r = records[keyOf(kind, id)];
       if (r && !r.deleted) write(kind, String(id), r.data, true);

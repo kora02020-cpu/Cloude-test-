@@ -151,6 +151,36 @@
 
         <div class="section">
           <div class="section-head">
+            <h3 id="fixed-title">毎月の固定費</h3>
+            <p class="legend" id="fixed-total"></p>
+          </div>
+          <ul class="list" id="fixed-list" aria-labelledby="fixed-title"></ul>
+          <p class="note">登録した固定費は、毎期(26日〜翌25日)の支出に「固定費」として自動で追加されます。</p>
+          <details class="tiers">
+            <summary>固定費を登録する</summary>
+            <form class="form" id="fixed-form" novalidate>
+              <label class="field">
+                <span>名前</span>
+                <input type="text" name="name" autocomplete="off" placeholder="例 家賃" required>
+              </label>
+              <div class="row">
+                <label class="field">
+                  <span>金額(円)</span>
+                  <input type="text" name="amount" inputmode="numeric" autocomplete="off" placeholder="例 70000" required>
+                </label>
+                <label class="field">
+                  <span>支払日(毎月)</span>
+                  <input type="text" name="day" inputmode="numeric" autocomplete="off" value="1" required>
+                </label>
+              </div>
+              <p class="form-msg" aria-live="polite"></p>
+              <button class="btn primary block" type="submit">固定費を登録</button>
+            </form>
+          </details>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
             <h3>期ごとの推移</h3>
             <button class="link-btn" type="button" id="trend-toggle" aria-pressed="false">表</button>
           </div>

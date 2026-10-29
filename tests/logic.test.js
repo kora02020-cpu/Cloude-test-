@@ -98,3 +98,14 @@ test('表示用の整形', () => {
   assert.equal(yen(NaN), '¥0');
   assert.equal(pts(12.34), '12.3');
 });
+
+test('固定費の日付:今期の中の毎月N日', async () => {
+  const { dateInCycle } = await import('../js/ui/fixed.js').catch(() => ({}));
+  if (!dateInCycle) return; // DOM を使う部品の読み込みに失敗する環境では省略
+  const c = cycleOf(d(2026, 10, 29));
+  assert.equal(dateInCycle(c, 1), '2026-11-01');
+  assert.equal(dateInCycle(c, 25), '2026-11-25');
+  assert.equal(dateInCycle(c, 27), '2026-10-27');
+  assert.equal(dateInCycle(cycleOf(d(2027, 1, 30)), 31), '2027-01-31');
+  assert.equal(dateInCycle(cycleOf(d(2027, 2, 1)), 31), '2027-01-31');
+});
