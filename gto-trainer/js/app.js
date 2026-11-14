@@ -3,6 +3,7 @@
   const $ = id => document.getElementById(id);
   const pct = x => (x * 100).toFixed(x > 0 && x < 0.1 ? 1 : 0) + '%';
   const ACTION_LABEL = { raise: 'レイズ', call: 'コール', fold: 'フォールド' };
+  const label = (sc, a) => (sc.labels && sc.labels[a]) || ACTION_LABEL[a];
   const byId = id => SCENARIOS.find(s => s.id === id);
   const store = {
     get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
@@ -28,6 +29,13 @@
   [$('viewerScenario'), $('trainerScenario'), $('eqScenario')].forEach(fillSelect);
 
   // ---------- レンジ表 ----------
+  function reachNote(sc, h) {
+    if (!sc.prior) return '';
+    const r = sc.reach[h];
+    if (r === 0) return '<p class="muted small">このハンドは前のアクションでレイズしないため、このスポットには到達しません。</p>';
+    if (r < 1) return `<p class="muted small">到達頻度 ${pct(r)}（前のアクションで ${pct(r)} の頻度でレイズ）</p>`;
+    return '';
+  }
   function freqBar(s) {
     return `<div class="freq-bar">
       <div style="width:${s.raise * 100}%;background:var(--raise)"></div>
@@ -39,7 +47,8 @@
     for (let i = 0; i < 13; i++) for (let j = 0; j < 13; j++) {
       const h = gridHand(i, j), s = sc.strategy[h];
       const cell = document.createElement('div');
-      cell.className = 'cell';
+      cell.className = 'cell' + (sc.reach[h] === 0 ? ' out' : '');
+      if (sc.reach[h] > 0 && sc.reach[h] < 1) cell.style.opacity = 0.45 + 0.55 * sc.reach[h];
       cell.innerHTML = `<div class="bar raise" style="width:${s.raise * 100}%"></div>
         <div class="bar call" style="width:${s.call * 100}%"></div><span>${h}</span>`;
       const show = () => {
@@ -47,14 +56,18 @@
         cell.classList.add('sel');
         $('handInfo').innerHTML = `<h2>${h}</h2><div class="muted small">${combosOf(h)} コンボ</div>
           ${freqBar(s)}
-          ${sc.actions.map(a => `<div class="freq-row"><span><i class="sw ${a}"></i>${ACTION_LABEL[a]}</span><b>${pct(s[a])}</b></div>`).join('')}`;
+          ${sc.actions.map(a => `<div class="freq-row"><span><i class="sw ${a}"></i>${label(sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}
+          ${reachNote(sc, h)}`;
       };
       cell.addEventListener('mouseenter', show);
       cell.addEventListener('click', show);
       grid.append(cell);
     }
     const st = rangeStats(sc);
-    $('viewerStats').innerHTML = sc.actions.map(a => `<span><i class="sw ${a}"></i>${ACTION_LABEL[a]} ${pct(st[a])}</span>`).join('');
+    $('viewerStats').innerHTML = sc.actions.map(a => `<span><i class="sw ${a}"></i>${label(sc, a)} ${pct(st[a])}</span>`).join('')
+      + (sc.prior ? '<span class="muted">※到達レンジ内の割合</span>' : '');
+    $('viewerDesc').textContent = sc.desc || '';
+    $('legendRaise').textContent = label(sc, 'raise');
     store.set('viewerScenario', sc.id);
   }
   $('viewerScenario').value = store.get('viewerScenario', 'BTN_RFI');
@@ -72,7 +85,8 @@
     const focus = $('focusMode').checked;
     const items = ALL_HANDS.map(h => {
       const s = sc.strategy[h];
-      let w = combosOf(h);
+      let w = combosOf(h) * sc.reach[h];
+      if (!w) return [h, 0];
       if (focus) {
         const maxF = Math.max(s.raise, s.call, s.fold);
         if (maxF === 1 && s.fold === 1) w *= isNearBoundary(sc, h) ? 0.6 : 0.05; // 明らかなフォールド
@@ -109,13 +123,13 @@
     const hand = pickHand(sc);
     const suits = suitsFor(hand);
     current = { sc, hand, answered: false };
-    $('spotName').textContent = sc.name;
+    $('spotName').innerHTML = sc.name + (sc.desc ? `<div class="spot-desc">${sc.desc}</div>` : '');
     $('heroCards').innerHTML = cardHTML(hand[0], suits[0]) + cardHTML(hand[1], suits[1]);
     $('actionButtons').innerHTML = '';
     sc.actions.forEach((a, k) => {
       const b = document.createElement('button');
       b.className = a; b.dataset.action = a;
-      b.textContent = `${ACTION_LABEL[a]} (${k + 1})`;
+      b.textContent = `${label(sc, a)} (${k + 1})`;
       b.addEventListener('click', () => answer(a));
       $('actionButtons').append(b);
     });
@@ -137,8 +151,8 @@
 
     stats.hands++; stats.score += score;
     if (cls === 'bad') { stats.blunders++; stats.streak = 0; } else stats.streak++;
-    stats.history.unshift({ spot: current.sc.name, hand: current.hand, action, cls,
-      gto: current.sc.actions.filter(a => s[a] > 0).map(a => `${ACTION_LABEL[a]} ${pct(s[a])}`).join(' / ') });
+    stats.history.unshift({ spot: current.sc.name, hand: current.hand, action: label(current.sc, action), cls,
+      gto: current.sc.actions.filter(a => s[a] > 0).map(a => `${label(current.sc, a)} ${pct(s[a])}`).join(' / ') });
     stats.history = stats.history.slice(0, 50);
     store.set('trainerStats', stats);
 
@@ -147,7 +161,7 @@
     });
     $('feedback').innerHTML = `<div class="verdict ${cls}">${verdict}</div>
       ${freqBar(s)}
-      ${current.sc.actions.map(a => `<div class="freq-row"><span>${ACTION_LABEL[a]}</span><b>${pct(s[a])}</b></div>`).join('')}`;
+      ${current.sc.actions.map(a => `<div class="freq-row"><span>${label(current.sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}`;
     $('nextHand').classList.remove('hidden');
     renderStats();
   }
@@ -158,7 +172,7 @@
     $('sBlunder').textContent = stats.blunders;
     $('sStreak').textContent = stats.streak;
     $('history').innerHTML = stats.history.map(h =>
-      `<li><span>${h.spot} — <b>${h.hand}</b> → <span class="${h.cls}">${ACTION_LABEL[h.action]}</span></span>
+      `<li><span>${h.spot} — <b>${h.hand}</b> → <span class="${h.cls}">${ACTION_LABEL[h.action] || h.action}</span></span>
        <span class="muted">${h.gto}</span></li>`).join('');
   }
 
@@ -183,7 +197,7 @@
     if (scId) {
       const sc = byId(scId), out = [];
       for (const h of ALL_HANDS) {
-        const s = sc.strategy[h], w = s.raise + s.call;
+        const s = sc.strategy[h], w = (s.raise + s.call) * sc.reach[h];
         if (w > 0) for (const c of handCombos(h)) out.push([c[0], c[1], w]);
       }
       return out;

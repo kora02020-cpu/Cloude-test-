@@ -95,3 +95,7 @@ footer { text-align: center; padding: 20px 16px 32px; }
   .scoreboard { grid-template-columns: repeat(2, 1fr); }
   h1 { font-size: 1rem; }
 }
+
+.cell.out { opacity: .22; }
+.desc { margin: -6px 0 12px; min-height: 1em; }
+.spot-desc { font-size: .85rem; font-weight: 400; color: #cfe8da; margin-top: 4px; }
