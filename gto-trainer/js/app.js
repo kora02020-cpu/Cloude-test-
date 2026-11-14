@@ -14,6 +14,7 @@
   document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+    if (btn.dataset.tab === 'viewer') renderGrid(); // トレーナーで変わったスタックを表示用に戻す
   }));
 
   // シナリオ選択肢
@@ -41,8 +42,16 @@
       <div style="width:${s.raise * 100}%;background:var(--raise)"></div>
       <div style="width:${s.call * 100}%;background:var(--call)"></div></div>`;
   }
+  const evText = x => (x >= 0 ? '+' : '') + x.toFixed(2) + 'bb';
+  function evNote(sc, ev) {
+    if (!ev) return '';
+    return `<div class="ev-box"><div class="muted small">期待値 (EV)</div>${sc.actions.map(a =>
+      `<div class="freq-row"><span>${label(sc, a)}</span><b>${evText(ev[a])}</b></div>`).join('')}</div>`;
+  }
   function renderGrid() {
     const sc = byId($('viewerScenario').value);
+    $('stackCtl').hidden = !sc.pushfold;
+    if (sc.pushfold) PushFold.setStack(+$('viewerStack').value);
     const grid = $('grid'); grid.innerHTML = '';
     for (let i = 0; i < 13; i++) for (let j = 0; j < 13; j++) {
       const h = gridHand(i, j), s = sc.strategy[h];
@@ -57,7 +66,7 @@
         $('handInfo').innerHTML = `<h2>${h}</h2><div class="muted small">${combosOf(h)} コンボ</div>
           ${freqBar(s)}
           ${sc.actions.map(a => `<div class="freq-row"><span><i class="sw ${a}"></i>${label(sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}
-          ${reachNote(sc, h)}`;
+          ${reachNote(sc, h)}${evNote(sc, sc.ev && sc.ev[h])}`;
       };
       cell.addEventListener('mouseenter', show);
       cell.addEventListener('click', show);
@@ -65,13 +74,17 @@
     }
     const st = rangeStats(sc);
     $('viewerStats').innerHTML = sc.actions.map(a => `<span><i class="sw ${a}"></i>${label(sc, a)} ${pct(st[a])}</span>`).join('')
-      + (sc.prior ? '<span class="muted">※到達レンジ内の割合</span>' : '');
+      + (sc.prior ? '<span class="muted">※到達レンジ内の割合</span>' : '')
+      + (sc.pushfold ? `<span class="solved">ナッシュ均衡（計算値）・可搾取度 ${(sc.exploitability * 1000).toFixed(2)} mbb/ハンド</span>` : '');
     $('viewerDesc').textContent = sc.desc || '';
     $('legendRaise').textContent = label(sc, 'raise');
     store.set('viewerScenario', sc.id);
   }
   $('viewerScenario').value = store.get('viewerScenario', 'BTN_RFI');
   if (!byId($('viewerScenario').value)) $('viewerScenario').value = 'BTN_RFI';
+  for (let b = 2; b <= 25; b++) $('viewerStack').append(new Option(b, b));
+  $('viewerStack').value = store.get('viewerStack', 10);
+  $('viewerStack').addEventListener('change', () => { store.set('viewerStack', +$('viewerStack').value); renderGrid(); });
   $('viewerScenario').addEventListener('change', renderGrid);
   renderGrid();
 
@@ -120,9 +133,10 @@
   function newHand() {
     const sel = $('trainerScenario').value;
     const sc = sel === 'random' ? SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)] : byId(sel);
+    if (sc.pushfold) PushFold.setStack(5 + Math.floor(Math.random() * 16)); // 5〜20bb をランダムに出題
     const hand = pickHand(sc);
     const suits = suitsFor(hand);
-    current = { sc, hand, answered: false };
+    current = { sc, hand, answered: false, strategy: sc.strategy, ev: sc.ev, name: sc.name + (sc.pushfold ? ` ${sc.stack}bb` : '') };
     $('spotName').innerHTML = sc.name + (sc.desc ? `<div class="spot-desc">${sc.desc}</div>` : '');
     $('heroCards').innerHTML = cardHTML(hand[0], suits[0]) + cardHTML(hand[1], suits[1]);
     $('actionButtons').innerHTML = '';
@@ -140,7 +154,7 @@
   function answer(action) {
     if (!current || current.answered) return;
     current.answered = true;
-    const s = current.sc.strategy[current.hand];
+    const s = current.strategy[current.hand];
     const best = Math.max(...current.sc.actions.map(a => s[a]));
     const f = s[action];
     const score = best > 0 ? f / best : 0;
@@ -151,7 +165,7 @@
 
     stats.hands++; stats.score += score;
     if (cls === 'bad') { stats.blunders++; stats.streak = 0; } else stats.streak++;
-    stats.history.unshift({ spot: current.sc.name, hand: current.hand, action: label(current.sc, action), cls,
+    stats.history.unshift({ spot: current.name, hand: current.hand, action: label(current.sc, action), cls,
       gto: current.sc.actions.filter(a => s[a] > 0).map(a => `${label(current.sc, a)} ${pct(s[a])}`).join(' / ') });
     stats.history = stats.history.slice(0, 50);
     store.set('trainerStats', stats);
@@ -161,7 +175,8 @@
     });
     $('feedback').innerHTML = `<div class="verdict ${cls}">${verdict}</div>
       ${freqBar(s)}
-      ${current.sc.actions.map(a => `<div class="freq-row"><span>${label(current.sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}`;
+      ${current.sc.actions.map(a => `<div class="freq-row"><span>${label(current.sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}
+      ${evNote(current.sc, current.ev && current.ev[current.hand])}`;
     $('nextHand').classList.remove('hidden');
     renderStats();
   }

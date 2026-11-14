@@ -21,6 +21,7 @@
   <section id="viewer" class="panel active">
     <div class="controls">
       <label>シナリオ <select id="viewerScenario" class="scenarioSelect"></select></label>
+      <label id="stackCtl" hidden>スタック <select id="viewerStack"></select> bb</label>
       <div id="viewerStats" class="stats"></div>
     </div>
     <p id="viewerDesc" class="muted small desc"></p>
@@ -79,11 +80,13 @@
 </main>
 
 <footer class="muted small">
-  6-max / 100bb / 2.5x オープン想定。レンジは学習用の近似値であり、ソルバーの出力そのものではありません。
+  プッシュ/フォールドはアプリ内で計算したナッシュ均衡です。それ以外（6-max / 100bb / 2.5x オープン想定）のレンジは学習用の近似値で、ソルバーの出力ではありません。
 </footer>
 
 <script src="js/evaluator.js"></script>
 <script src="js/ranges.js"></script>
+<script src="js/equity-data.js"></script>
+<script src="js/pushfold.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

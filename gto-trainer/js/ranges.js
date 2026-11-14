@@ -114,6 +114,11 @@
       desc: 'BTN オープン → BB 3ベット 11bb → BTN 4ベット 24bb（OOP）', labels: { raise: '5ベット(オールイン)' }, actions: ['raise', 'call', 'fold'],
       raise: 'QQ+, AKs, AKo:0.8, JJ:0.3, A5s:0.3',
       cont: 'QQ+, JJ, TT:0.8, 99:0.4, AKs, AQs, AJs:0.4, KQs:0.5, KJs:0.3, AKo, AQo:0.3, A5s:0.6, A4s:0.4' },
+    // ---- プッシュ/フォールド: 戦略は pushfold.js がスタックごとにナッシュ均衡を計算して書き込む ----
+    { id: 'SB_PF', group: 'プッシュ/フォールド (ナッシュ均衡を計算)', name: 'SB オールイン or フォールド (HU)', pushfold: 'sb',
+      labels: { raise: 'オールイン' }, actions: ['raise', 'fold'], raise: '' },
+    { id: 'BB_vs_SB_PF', group: 'プッシュ/フォールド (ナッシュ均衡を計算)', name: 'BB vs SB オールイン (HU)', pushfold: 'bb',
+      actions: ['call', 'fold'], raise: '', cont: '' },
   ];
 
   // 各シナリオの {hand: {raise, call, fold}} を構築

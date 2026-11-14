@@ -99,3 +99,7 @@ footer { text-align: center; padding: 20px 16px 32px; }
 .cell.out { opacity: .22; }
 .desc { margin: -6px 0 12px; min-height: 1em; }
 .spot-desc { font-size: .85rem; font-weight: 400; color: #cfe8da; margin-top: 4px; }
+
+[hidden] { display: none !important; }
+.ev-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.stats .solved { background: transparent; border: 1px solid var(--call); color: #6ee7a8; }
