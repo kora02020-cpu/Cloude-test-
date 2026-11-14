@@ -119,7 +119,9 @@
       const cfg = { pot, stack, street, runouts, allin: $('svAllin').checked, maxRaises: +$('svMaxRaise').value,
         sizes: { oop: { bet, raise }, ip: { bet, raise } } };
       game = { cfg, board, hands, weights, classes, pos: pos.slice(), street };
-      path = []; crumbs = [];
+      path = []; crumbs = []; pr = null;
+      $('svBrowse').hidden = false; $('svPractice').hidden = true;
+      $('svModeBrowse').classList.add('active'); $('svModePractice').classList.remove('active');
       $('svResult').hidden = true;
       $('svProgress').innerHTML = '<p class="muted">準備中…</p>';
       solving = true; setSolveButtons(); startTime = performance.now();
@@ -248,4 +250,168 @@
     $('svLegend').innerHTML = info.actions.map((a, k) => `<span><i class="sw" style="background:${colors[k]}"></i>${actionLabel(a, info.pot)}</span>`).join('');
     $('svHand').innerHTML = '<p class="muted">ハンドにカーソルを合わせると、コンボごとの戦略・EV・エクイティが表示されます</p>';
   }
+
+  // ---------- ソルバーの結果で練習 ----------
+  function setMode(m) {
+    $('svBrowse').hidden = m !== 'browse'; $('svPractice').hidden = m !== 'practice';
+    $('svModeBrowse').classList.toggle('active', m === 'browse');
+    $('svModePractice').classList.toggle('active', m === 'practice');
+    if (m === 'practice' && (!pr || pr.game !== game)) startPractice();
+  }
+  $('svModeBrowse').addEventListener('click', () => setMode('browse'));
+  $('svModePractice').addEventListener('click', () => setMode('practice'));
+
+  const loadStats = () => { try { return JSON.parse(localStorage.getItem('solverPracticeStats')) || null; } catch { return null; } };
+  let spStats = loadStats() || { hands: 0, decisions: 0, good: 0, ok: 0, evLoss: 0 };
+  const saveStats = () => { try { localStorage.setItem('solverPracticeStats', JSON.stringify(spStats)); } catch {} };
+  function renderSpStats() {
+    $('spHands').textContent = spStats.hands;
+    $('spDec').textContent = spStats.decisions;
+    $('spAcc').textContent = spStats.decisions ? ((spStats.good + spStats.ok * 0.5) / spStats.decisions * 100).toFixed(1) + '%' : '–';
+    $('spLoss').textContent = !spStats.decisions ? '–' : spStats.evLoss >= 0.005 ? '-' + spStats.evLoss.toFixed(2) + 'bb' : '0.00bb';
+  }
+  renderSpStats();
+  $('spReset').addEventListener('click', () => { spStats = { hands: 0, decisions: 0, good: 0, ok: 0, evLoss: 0 }; saveStats(); renderSpStats(); });
+
+  const bigCard = c => `<div class="card ${SUIT_CLASS[c & 3]}">${RK[c >> 2].replace('T', '10')}<small>${SUIT_SYM[c & 3]}</small></div>`;
+  const backCard = () => '<div class="card back"></div>';
+  function pickIndex(n, wOf) {
+    let tot = 0; for (let i = 0; i < n; i++) tot += wOf(i);
+    let x = Math.random() * tot;
+    for (let i = 0; i < n; i++) { x -= wOf(i); if (x <= 0 && wOf(i) > 0) return i; }
+    for (let i = n - 1; i >= 0; i--) if (wOf(i) > 0) return i;
+    return -1;
+  }
+  const overlap = (a, b) => a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1];
+
+  let pr = null;
+  function startPractice() {
+    if (!game) return;
+    const side = $('spSide').value === 'random' ? (Math.random() < 0.5 ? 0 : 1) : +$('spSide').value;
+    const v = 1 - side, H = game.hands, Wt = game.weights;
+    const hi = pickIndex(H[side].length, i => Wt[side][i]);
+    const vi = pickIndex(H[v].length, i => (overlap(H[v][i], H[side][hi]) ? 0 : Wt[v][i]));
+    pr = { game, side, hi, vi, path: [], log: [], board: game.board.slice(), loss: 0, done: false, lastText: '' };
+    spStats.hands++; saveStats(); renderSpStats();
+    $('spFeedback').innerHTML = '';
+    spStep();
+  }
+  $('spStart').addEventListener('click', startPractice);
+  $('spSide').addEventListener('change', startPractice);
+
+  function spRender(pot, reveal) {
+    const g = pr.game, h = g.hands[pr.side][pr.hi], vh = g.hands[1 - pr.side][pr.vi];
+    $('spHeroCards').innerHTML = bigCard(h[0]) + bigCard(h[1]);
+    $('spVillCards').innerHTML = reveal ? bigCard(vh[0]) + bigCard(vh[1]) : backCard() + backCard();
+    $('spHeroSeat').textContent = `あなた (${g.pos[pr.side]}・${pr.side ? 'IP' : 'OOP'})`;
+    $('spVillSeat').textContent = `相手 (${g.pos[1 - pr.side]}・${pr.side ? 'OOP' : 'IP'})`;
+    $('spBoard').innerHTML = pr.board.map(bigCard).join('') + (pr.board.length < 5 ? '<div class="card slot"></div>' : '');
+    if (pot !== undefined) $('spPot').textContent = `ポット ${+pot.toFixed(2)}bb`;
+    $('spLog').innerHTML = pr.log.map(l => `<li><span>${l.text}</span>${l.res ? `<span class="${l.cls}">${l.res}</span>` : ''}</li>`).join('');
+  }
+  const streetName = () => (pr.board.length === 4 ? 'ターン' : 'リバー');
+  function spNext(text, fn) {
+    const b = $('spNext');
+    if (!text) { b.hidden = true; b.onclick = null; return; }
+    b.hidden = false; b.textContent = text + ' (Space)'; b.onclick = () => { b.hidden = true; b.onclick = null; fn(); };
+  }
+
+  async function spStep() {
+    if (!pr || pr.game !== game) return;
+    const info = await query(pr.path);
+    const g = pr.game;
+    $('spActions').innerHTML = ''; spNext(null);
+    if (info.type === 'chance') {
+      const hv = [...g.hands[0][pr.side === 0 ? pr.hi : pr.vi], ...g.hands[1][pr.side === 1 ? pr.hi : pr.vi]];
+      const ok = info.runouts.map((c, k) => (hv.includes(c) ? -1 : k)).filter(k => k >= 0);
+      const k = ok[Math.floor(Math.random() * ok.length)];
+      const card = info.runouts[k];
+      pr.board.push(card); pr.path.push(k);
+      pr.log.push({ text: `リバー: ${E.cardToString(card)}` });
+      return spStep();
+    }
+    if (info.type === 'fold' || info.type === 'showdown') return spFinish(info);
+    const p = info.player, n = g.hands[p].length;
+    spRender(info.pot, false);
+    if (p !== pr.side) { // 相手の行動をソルバーの戦略からサンプリング
+      const a = pickIndex(info.actions.length, k => info.strategy[k * n + pr.vi]);
+      const label = actionLabel(info.actions[a], info.pot);
+      pr.log.push({ text: `${streetName()}: 相手 ${label}` });
+      pr.lastText = `相手は ${label}`;
+      pr.path.push(a);
+      return spStep();
+    }
+    $('spStreet').innerHTML = `${streetName()}<div class="spot-desc">${pr.lastText ? pr.lastText + '。' : ''}あなたのアクションは？</div>`;
+    const colors = actionColors(info.actions);
+    info.actions.forEach((act, k) => {
+      const b = document.createElement('button');
+      b.textContent = `${actionLabel(act, info.pot)} (${k + 1})`;
+      b.style.setProperty('--c', colors[k]);
+      b.addEventListener('click', () => spAnswer(info, k));
+      $('spActions').append(b);
+    });
+  }
+
+  function spAnswer(info, a) {
+    if (pr.answered === pr.path.length) return;
+    pr.answered = pr.path.length;
+    const g = pr.game, n = g.hands[pr.side].length, i = pr.hi, A = info.actions.length;
+    const freqs = info.actions.map((_, k) => info.strategy[k * n + i]);
+    const evs = info.actionEV.map(arr => arr[i]);
+    const valid = evs.filter(x => x !== null);
+    const bestEV = valid.length ? Math.max(...valid) : 0;
+    const loss = evs[a] === null ? 0 : Math.max(0, bestEV - evs[a]);
+    const cls = loss < 0.005 * info.pot ? 'good' : loss < 0.03 * info.pot ? 'ok' : 'bad';
+    const verdict = { good: '正解 ✓', ok: '許容範囲', bad: 'ミス ✗' }[cls];
+    spStats.decisions++; if (cls === 'good') spStats.good++; else if (cls === 'ok') spStats.ok++;
+    spStats.evLoss += loss; pr.loss += loss; saveStats(); renderSpStats();
+    const label = actionLabel(info.actions[a], info.pot);
+    pr.log.push({ text: `${streetName()}: あなた ${label}`, res: `${verdict}${loss >= 0.005 ? `（-${loss.toFixed(2)}bb）` : ''}`, cls });
+    document.querySelectorAll('#spActions button').forEach((b, k) => { b.disabled = true; if (k === a) b.classList.add('chosen'); });
+    const colors = actionColors(info.actions);
+    $('spFeedback').innerHTML = `<div class="verdict ${cls}">${verdict}</div>
+      <div class="freq-bar">${freqs.map((f, k) => `<div style="width:${f * 100}%;background:${colors[k]}"></div>`).join('')}</div>
+      <div class="opt-table-wrap"><table class="opt-table sp-table">
+        <thead><tr><th>アクション</th><th>GTO頻度</th><th>EV</th><th>EV損失</th></tr></thead>
+        <tbody>${info.actions.map((act, k) => `<tr class="${k === a ? 'mine' : ''} ${evs[k] !== null && bestEV - evs[k] < 0.005 * info.pot ? 'best' : ''}">
+          <td>${actionLabel(act, info.pot)}</td><td class="freq">${(freqs[k] * 100).toFixed(1)}%</td>
+          <td>${evs[k] === null ? '–' : evs[k].toFixed(2) + 'bb'}</td>
+          <td>${evs[k] === null ? '–' : (bestEV - evs[k] < 0.005 ? '0' : '-' + (bestEV - evs[k]).toFixed(2)) + 'bb'}</td></tr>`).join('')}</tbody></table></div>
+      <p class="muted small">EV は「このハンドがこの時点から最終的に得る額」（フォールド = 0bb）。GTO頻度は、ソルバーがこのコンボで各アクションを選ぶ割合です。</p>`;
+    pr.path.push(a); pr.lastText = '';
+    spRender(info.pot, false);
+    spNext('続ける', () => { $('spFeedback').innerHTML = ''; spStep(); });
+  }
+
+  function spFinish(info) {
+    const g = pr.game;
+    let text, cls;
+    if (info.type === 'fold') {
+      const pot = info.contrib[0] + info.contrib[1];
+      const heroFolded = info.folder === pr.side;
+      text = heroFolded ? 'あなたがフォールド' : `相手がフォールド：ポット ${+pot.toFixed(2)}bb を獲得`;
+      cls = heroFolded ? 'bad' : 'good';
+      spRender(pot, true);
+    } else {
+      const h = g.hands[pr.side][pr.hi], vh = g.hands[1 - pr.side][pr.vi];
+      const hs = E.eval7([...h, ...pr.board]), vs = E.eval7([...vh, ...pr.board]);
+      text = hs > vs ? `あなたの勝ち（${E.category(hs)} vs ${E.category(vs)}）` : hs < vs ? `相手の勝ち（${E.category(hs)} vs ${E.category(vs)}）` : `引き分け（${E.category(hs)}）`;
+      cls = hs > vs ? 'good' : hs < vs ? 'bad' : 'ok';
+      spRender(info.pot, true);
+    }
+    pr.log.push({ text: info.type === 'fold' ? 'ハンド終了' : 'ショーダウン', res: text, cls });
+    spRender(undefined, true);
+    $('spStreet').innerHTML = `結果<div class="spot-desc">相手の手札は ${g.hands[1 - pr.side][pr.vi].map(E.cardToString).join(' ')}</div>`;
+    $('spFeedback').insertAdjacentHTML('beforeend', `<div class="verdict ${cls}">${text}</div>
+      <div class="freq-row"><span>このハンドのEV損失</span><b>${pr.loss >= 0.005 ? '-' + pr.loss.toFixed(2) + 'bb' : 'なし'}</b></div>`);
+    spNext('次のハンド', startPractice);
+  }
+
+  document.addEventListener('keydown', e => {
+    if ($('svPractice').hidden || !$('solver').classList.contains('active') || e.target.matches('input, select, textarea')) return;
+    if ((e.code === 'Space' || e.code === 'Enter') && !$('spNext').hidden) { e.preventDefault(); $('spNext').click(); return; }
+    const k = parseInt(e.key, 10);
+    const btns = $('spActions').querySelectorAll('button:not(:disabled)');
+    if (k >= 1 && btns[k - 1]) btns[k - 1].click();
+  });
 })();

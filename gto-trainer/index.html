@@ -112,6 +112,11 @@
       リバーは数秒、ターン（リバー48通りを含む）は数十秒かかります。ターンは計算が重いため、ベットサイズを少なめにすると速くなります。</p>
     <div id="svProgress" class="sv-progress"></div>
     <div id="svResult" hidden>
+      <div class="sv-mode">
+        <button id="svModeBrowse" class="seg active" type="button">戦略を見る</button>
+        <button id="svModePractice" class="seg" type="button">この結果で練習する</button>
+      </div>
+      <div id="svBrowse">
       <div id="svPath" class="sv-path"></div>
       <div id="svNodeHead" class="sv-head"></div>
       <div id="svSummary" class="stats"></div>
@@ -120,6 +125,34 @@
         <aside id="svHand" class="hand-info"></aside>
       </div>
       <div id="svLegend" class="legend"></div>
+      </div>
+      <div id="svPractice" hidden>
+        <div class="controls">
+          <label>あなたの立場 <select id="spSide"><option value="random">ランダム</option><option value="0">OOP（先に行動）</option><option value="1">IP（後に行動）</option></select></label>
+          <button id="spStart" class="primary" type="button">新しいハンド</button>
+          <button id="spReset" class="ghost" type="button">成績リセット</button>
+        </div>
+        <div class="table hp-table">
+          <div class="hp-seat"><div id="spVillSeat" class="seat"></div><div id="spVillCards" class="cards"></div></div>
+          <div class="hp-middle"><div id="spBoard" class="cards board"></div><div id="spPot" class="pot"></div></div>
+          <div class="hp-seat"><div id="spHeroCards" class="cards"></div><div id="spHeroSeat" class="seat"></div></div>
+          <div id="spStreet" class="spot"></div>
+          <div id="spActions" class="actions"></div>
+          <div id="spFeedback" class="feedback"></div>
+          <button id="spNext" class="primary" hidden></button>
+        </div>
+        <div class="scoreboard">
+          <div><b id="spHands">0</b><span>ハンド数</span></div>
+          <div><b id="spDec">0</b><span>判断数</span></div>
+          <div><b id="spAcc">–</b><span>正解率</span></div>
+          <div><b id="spLoss">–</b><span>EV損失の合計</span></div>
+        </div>
+        <h3>このハンドの流れ</h3>
+        <ol id="spLog" class="history"></ol>
+        <p class="muted small">採点: あなたのアクションと、そのハンドで最もEVが高いアクションとのEVの差（EV損失）で判定します。
+          差がポットの0.5%未満なら正解（GTOが混ぜて使うアクションはEVがほぼ同じなので、どれを選んでも正解になります）、3%未満なら許容範囲、それ以上はミスです。
+          相手はソルバーの戦略どおりの確率で行動します。</p>
+      </div>
     </div>
   </section>
 

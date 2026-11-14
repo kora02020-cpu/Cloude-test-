@@ -254,7 +254,7 @@ function solverCoreFactory() {
         for (let i = 0; i < n; i++) nr[i] = reach[p][i] * s[step * n + i];
         reach[p] = nr; node = node.children[step];
       }
-      const info = { type: node.type, pot: node.pot, reach: reach.map(x => Array.from(x)) };
+      const info = { type: node.type, pot: node.pot, contrib: node.contrib, folder: node.folder, reach: reach.map(x => Array.from(x)) };
       if (node.type === 'chance') { info.runouts = cfg.runouts; return info; }
       if (node.type !== 'action') return info;
       const p = node.player, n = N[p], o = 1 - p;
@@ -264,8 +264,11 @@ function solverCoreFactory() {
       // EV: 行動側の各コンボについて、ノード以降の損益 + すでに投入した額（フォールド = 0 の基準）
       const v = walk(node, p, reach[o], reach[p], 'eval', 0, r);
       const v2 = Float64Array.from(v);
+      const childVals = node.vals.map(x => Float64Array.from(x)); // アクションごとの値（子ノードの値）
       const m = foldValue(p, reach[o], { folder: o, contrib: [1, 1] }, new Float64Array(n));
-      info.ev = Array.from(v2, (x, i) => (m[i] > 1e-12 ? x / m[i] + node.contrib[p] : null));
+      const toEV = (x, i) => (m[i] > 1e-12 ? x / m[i] + node.contrib[p] : null);
+      info.ev = Array.from(v2, toEV);
+      info.actionEV = childVals.map(cv => Array.from(cv, toEV));
       // エクイティ（ランアウト未確定のターンでは省略）
       if (cfg.street === 'river' || path.length && pathHasChance(path)) {
         const sd = showdownValue(p, reach[o], r, 1, new Float64Array(n));
