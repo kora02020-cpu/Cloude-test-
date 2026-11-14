@@ -1,0 +1,97 @@
+:root {
+  --bg: #0f1419; --panel: #1a2129; --panel2: #232c36; --text: #e6edf3; --muted: #8b98a5;
+  --raise: #e5484d; --call: #30a46c; --fold: #3e63dd; --fold-dim: #2a3442; --accent: #f5b942;
+  --border: #2f3a46;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+h1 { font-size: 1.2rem; margin: 0; }
+h3 { margin: 24px 0 8px; font-size: 1rem; }
+nav { display: flex; gap: 4px; }
+button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel2); color: var(--text); padding: 8px 14px; }
+button:hover { border-color: var(--muted); }
+.tab.active { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+.ghost { background: transparent; }
+.hidden { display: none !important; }
+main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.panel { display: none; } .panel.active { display: block; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+select, input { font: inherit; background: var(--panel2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+label { display: flex; gap: 8px; align-items: center; }
+.check input { width: 16px; height: 16px; }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; font-size: .9rem; }
+.stats span { padding: 4px 10px; border-radius: 999px; background: var(--panel2); }
+.muted { color: var(--muted); } .small { font-size: .82rem; }
+
+/* グリッド */
+.viewer-layout { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; align-items: start; }
+.grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; width: 100%; max-width: 680px; }
+.cell { position: relative; aspect-ratio: 1; border-radius: 3px; overflow: hidden;
+  background: var(--fold-dim); display: flex; cursor: default; }
+.cell .bar { height: 100%; }
+.cell .bar.raise { background: var(--raise); } .cell .bar.call { background: var(--call); }
+.cell .bar.fold { background: var(--fold-dim); }
+.cell span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: clamp(8px, 1.5vw, 13px); font-weight: 600; text-shadow: 0 1px 2px #000a; pointer-events: none; }
+.cell:hover, .cell.sel { outline: 2px solid var(--accent); z-index: 1; }
+.hand-info { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.hand-info h2 { margin: 0 0 10px; }
+.freq-row { display: flex; justify-content: space-between; margin: 4px 0; }
+.freq-bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--fold-dim); margin: 10px 0; }
+.legend { display: flex; gap: 16px; margin-top: 12px; font-size: .9rem; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.sw.raise { background: var(--raise); } .sw.call { background: var(--call); } .sw.fold { background: var(--fold-dim); border: 1px solid var(--muted); }
+
+/* トレーナー */
+.table { background: radial-gradient(ellipse at center, #1f5f3f 0%, #143d29 70%);
+  border: 6px solid #3b2a1a; border-radius: 120px; padding: 32px 20px; text-align: center; min-height: 320px; }
+.spot { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; }
+.cards { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.card { width: 70px; height: 98px; border-radius: 8px; background: #fff; color: #111;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 700; box-shadow: 0 4px 10px #0007; line-height: 1; }
+.card small { font-size: 1.6rem; }
+.card.red { color: #d0202a; } .card.blue { color: #1f5fd6; } .card.green { color: #1a8a3a; }
+.actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.actions button { min-width: 110px; padding: 12px 18px; font-weight: 600; border: none; }
+.actions .raise { background: var(--raise); } .actions .call { background: var(--call); }
+.actions .fold { background: var(--fold); }
+.actions button:disabled { opacity: .5; cursor: default; }
+.actions button.chosen { outline: 3px solid #fff; opacity: 1; }
+.feedback { margin: 16px auto 12px; max-width: 420px; min-height: 24px; }
+.feedback .verdict { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+.verdict.good { color: #6ee7a8; } .verdict.ok { color: var(--accent); } .verdict.bad { color: #ff8a8a; }
+.scoreboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+.scoreboard div { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px; text-align: center; display: flex; flex-direction: column; }
+.scoreboard b { font-size: 1.4rem; } .scoreboard span { color: var(--muted); font-size: .8rem; }
+.history { list-style: none; padding: 0; margin: 0; max-height: 240px; overflow: auto; }
+.history li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px;
+  border-bottom: 1px solid var(--border); font-size: .9rem; }
+.history .good { color: #6ee7a8; } .history .ok { color: var(--accent); } .history .bad { color: #ff8a8a; }
+
+/* エクイティ */
+.eq-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.eq-form label { flex-direction: column; align-items: stretch; gap: 4px; font-size: .9rem; }
+.eq-form button { align-self: end; }
+.eq-result { margin: 16px 0; }
+.eq-big { font-size: 2.2rem; font-weight: 700; }
+.eq-bar { display: flex; height: 18px; border-radius: 9px; overflow: hidden; margin: 8px 0; }
+.error { color: #ff8a8a; }
+
+footer { text-align: center; padding: 20px 16px 32px; }
+
+@media (max-width: 720px) {
+  .viewer-layout { grid-template-columns: 1fr; }
+  .table { border-radius: 40px; padding: 24px 12px; }
+  .card { width: 58px; height: 82px; font-size: 1.5rem; }
+  .scoreboard { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1rem; }
+}

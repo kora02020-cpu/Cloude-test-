@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTO Preflop Trainer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>♠ GTO Preflop Trainer</h1>
+  <nav>
+    <button class="tab active" data-tab="viewer">レンジ表</button>
+    <button class="tab" data-tab="trainer">トレーナー</button>
+    <button class="tab" data-tab="equity">エクイティ計算</button>
+  </nav>
+</header>
+
+<main>
+  <!-- レンジ表 -->
+  <section id="viewer" class="panel active">
+    <div class="controls">
+      <label>シナリオ <select id="viewerScenario" class="scenarioSelect"></select></label>
+      <div id="viewerStats" class="stats"></div>
+    </div>
+    <div class="viewer-layout">
+      <div id="grid" class="grid"></div>
+      <aside id="handInfo" class="hand-info">
+        <p class="muted">ハンドにカーソルを合わせると頻度が表示されます</p>
+      </aside>
+    </div>
+    <div class="legend">
+      <span><i class="sw raise"></i>レイズ</span>
+      <span><i class="sw call"></i>コール</span>
+      <span><i class="sw fold"></i>フォールド</span>
+    </div>
+  </section>
+
+  <!-- トレーナー -->
+  <section id="trainer" class="panel">
+    <div class="controls">
+      <label>シナリオ <select id="trainerScenario" class="scenarioSelect"><option value="random">ランダム</option></select></label>
+      <label class="check"><input type="checkbox" id="focusMode" checked> 判断の難しいハンド中心</label>
+      <button id="resetStats" class="ghost">成績リセット</button>
+    </div>
+    <div class="table">
+      <div id="spotName" class="spot"></div>
+      <div id="heroCards" class="cards"></div>
+      <div id="actionButtons" class="actions"></div>
+      <div id="feedback" class="feedback"></div>
+      <button id="nextHand" class="primary hidden">次のハンド (Space)</button>
+    </div>
+    <div class="scoreboard">
+      <div><b id="sHands">0</b><span>ハンド数</span></div>
+      <div><b id="sAcc">–</b><span>GTO精度</span></div>
+      <div><b id="sBlunder">0</b><span>ミス</span></div>
+      <div><b id="sStreak">0</b><span>連続正解</span></div>
+    </div>
+    <h3>履歴</h3>
+    <ul id="history" class="history"></ul>
+  </section>
+
+  <!-- エクイティ -->
+  <section id="equity" class="panel">
+    <div class="eq-form">
+      <label>あなたのハンド <input id="eqHero" value="AhKh" placeholder="例: AhKh"></label>
+      <label>相手 (ハンド or レンジ) <input id="eqVillain" value="TT+, AQs+, AKo" placeholder="例: QsQd / TT+, AQs+"></label>
+      <label>…またはシナリオのレンジを使う
+        <select id="eqScenario"><option value="">（使わない）</option></select>
+      </label>
+      <label>ボード (任意) <input id="eqBoard" placeholder="例: Ks7d2c"></label>
+      <label>試行回数 <select id="eqIter"><option>10000</option><option selected>50000</option><option>200000</option></select></label>
+      <button id="eqRun" class="primary">計算する</button>
+    </div>
+    <div id="eqResult" class="eq-result"></div>
+    <p class="muted small">カード表記: ランク(A K Q J T 9…2) + スート(s=♠ h=♥ d=♦ c=♣)。レンジ表記: 22+, A2s+, A5s-A2s, KQo, AK:0.5 など。</p>
+  </section>
+</main>
+
+<footer class="muted small">
+  6-max / 100bb / 2.5x オープン想定。レンジは学習用の近似値であり、ソルバーの出力そのものではありません。
+</footer>
+
+<script src="js/evaluator.js"></script>
+<script src="js/ranges.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
