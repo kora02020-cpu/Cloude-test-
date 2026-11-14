@@ -12,6 +12,7 @@
   <nav>
     <button class="tab active" data-tab="viewer">レンジ表</button>
     <button class="tab" data-tab="trainer">トレーナー</button>
+    <button class="tab" data-tab="hand">ハンド練習</button>
     <button class="tab" data-tab="equity">エクイティ計算</button>
   </nav>
 </header>
@@ -62,6 +63,33 @@
     <ul id="history" class="history"></ul>
   </section>
 
+  <!-- ハンド練習 -->
+  <section id="hand" class="panel">
+    <div class="controls">
+      <label>シチュエーション <select id="hpSpot"><option value="random">ランダム</option></select></label>
+      <button id="hpReset" class="ghost">成績リセット</button>
+    </div>
+    <div class="table hp-table">
+      <div class="hp-seat"><div id="hpVillSeat" class="seat"></div><div id="hpVillCards" class="cards"></div></div>
+      <div class="hp-middle"><div id="hpBoard" class="cards board"></div><div id="hpPot" class="pot"></div></div>
+      <div class="hp-seat"><div id="hpHeroCards" class="cards"></div><div id="hpHeroSeat" class="seat"></div></div>
+      <div id="hpStreet" class="spot"></div>
+      <div id="hpActions" class="actions"></div>
+      <div id="hpFeedback" class="feedback"></div>
+      <button id="hpNext" class="primary" hidden></button>
+    </div>
+    <div class="scoreboard">
+      <div><b id="hpHands">0</b><span>ハンド数</span></div>
+      <div><b id="hpDec">0</b><span>判断数</span></div>
+      <div><b id="hpAcc">–</b><span>正解率</span></div>
+      <div><b id="hpLoss">–</b><span>EV損失の合計</span></div>
+    </div>
+    <h3>このハンドの流れ</h3>
+    <ol id="hpLog" class="history"></ol>
+    <p class="muted small">判定方法: フロップ以降は、相手のベットレンジに対するあなたのエクイティが、ポットオッズから求めた必要エクイティ（ベット ÷ (ポット + ベット×2)）を上回ればコールが正解です。
+    以降のストリートでの追加のベットは考えない、生のエクイティでの判定です。相手は一定のモデルで動きます（強いハンドの上位とドローなどのブラフでベットし、残りはチェック）。相手の行動に応じてレンジが絞られ、次のストリートへ引き継がれます。</p>
+  </section>
+
   <!-- エクイティ -->
   <section id="equity" class="panel">
     <div class="eq-form">
@@ -88,5 +116,6 @@
 <script src="js/equity-data.js"></script>
 <script src="js/pushfold.js"></script>
 <script src="js/app.js"></script>
+<script src="js/handplay.js"></script>
 </body>
 </html>

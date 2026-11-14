@@ -103,3 +103,24 @@ footer { text-align: center; padding: 20px 16px 32px; }
 [hidden] { display: none !important; }
 .ev-box { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
 .stats .solved { background: transparent; border: 1px solid var(--call); color: #6ee7a8; }
+
+/* ハンド練習 */
+.hp-table { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.hp-seat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hp-seat .cards, .hp-middle .cards { margin-bottom: 0; }
+.seat { font-size: .85rem; color: #cfe8da; }
+.hp-middle { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; }
+.board .card { width: 52px; height: 74px; font-size: 1.3rem; }
+.board .card small { font-size: 1.2rem; }
+.card.back { background: repeating-linear-gradient(45deg, #7a1f24 0 6px, #95282e 6px 12px); border: 3px solid #fff; }
+.card.slot { background: transparent; border: 2px dashed #ffffff40; box-shadow: none; }
+.pot { font-size: .9rem; background: #0006; padding: 4px 12px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.hp-table .spot { margin-bottom: 0; }
+.hp-table .feedback { width: 100%; }
+.eq-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
+.eq-compare div { background: #0005; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.eq-compare b { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.eq-compare .pos { color: #6ee7a8; } .eq-compare .neg { color: #ff8a8a; }
+#hpLog { list-style: decimal inside; }
+#hpLog li .good { color: #6ee7a8; } #hpLog li .ok { color: var(--accent); } #hpLog li .bad { color: #ff8a8a; }
+@media (max-width: 720px) { .board .card { width: 44px; height: 62px; font-size: 1.1rem; } .eq-compare { grid-template-columns: 1fr; } }
