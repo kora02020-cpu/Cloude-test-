@@ -13,6 +13,7 @@
     <button class="tab active" data-tab="viewer">レンジ表</button>
     <button class="tab" data-tab="trainer">トレーナー</button>
     <button class="tab" data-tab="hand">ハンド練習</button>
+    <button class="tab" data-tab="solver">ソルバー</button>
     <button class="tab" data-tab="equity">エクイティ計算</button>
   </nav>
 </header>
@@ -90,6 +91,38 @@
     以降のストリートでの追加のベットは考えない、生のエクイティでの判定です。相手は一定のモデルで動きます（強いハンドの上位とドローなどのブラフでベットし、残りはチェック）。相手の行動に応じてレンジが絞られ、次のストリートへ引き継がれます。</p>
   </section>
 
+  <!-- ソルバー -->
+  <section id="solver" class="panel">
+    <div class="sv-form">
+      <label class="wide">プリセット <select id="svPreset"></select></label>
+      <label>ボード（ターン4枚 / リバー5枚）
+        <span class="row"><input id="svBoard" value="Ks7d2c9h4s"><button id="svRandBoard" type="button">ランダム</button></span></label>
+      <label>ポット (bb) <input id="svPot" type="number" step="0.5" min="0.5"></label>
+      <label>有効スタック (bb) <input id="svStack" type="number" step="0.5" min="0.5"></label>
+      <label class="wide">OOP（先に行動する側）のレンジ <textarea id="svRangeOOP" rows="3"></textarea></label>
+      <label class="wide">IP（後に行動する側）のレンジ <textarea id="svRangeIP" rows="3"></textarea></label>
+      <label>ベットサイズ（% ポット）<input id="svBets" value="33, 75"></label>
+      <label>レイズサイズ（% ポット）<input id="svRaises" value="75"></label>
+      <label>最大レイズ回数 <select id="svMaxRaise"><option>0</option><option>1</option><option selected>2</option><option>3</option></select></label>
+      <label>目標の精度（可搾取度）<select id="svTarget"><option value="1">1% ポット</option><option value="0.5" selected>0.5% ポット</option><option value="0.3">0.3% ポット</option></select></label>
+      <label class="check"><input type="checkbox" id="svAllin" checked> オールインを選択肢に含める</label>
+      <div class="sv-buttons"><button id="svSolve" class="primary">計算する</button><button id="svStop">停止</button></div>
+    </div>
+    <p class="muted small">レンジはプリフロップのレンジ表から作っています。実際にはフロップ・ターンの行動でレンジがもっと絞られるので、必要に応じて編集してください。
+      リバーは数秒、ターン（リバー48通りを含む）は数十秒かかります。ターンは計算が重いため、ベットサイズを少なめにすると速くなります。</p>
+    <div id="svProgress" class="sv-progress"></div>
+    <div id="svResult" hidden>
+      <div id="svPath" class="sv-path"></div>
+      <div id="svNodeHead" class="sv-head"></div>
+      <div id="svSummary" class="stats"></div>
+      <div class="viewer-layout">
+        <div id="svGrid" class="grid"></div>
+        <aside id="svHand" class="hand-info"></aside>
+      </div>
+      <div id="svLegend" class="legend"></div>
+    </div>
+  </section>
+
   <!-- エクイティ -->
   <section id="equity" class="panel">
     <div class="eq-form">
@@ -117,5 +150,7 @@
 <script src="js/pushfold.js"></script>
 <script src="js/app.js"></script>
 <script src="js/handplay.js"></script>
+<script src="js/solver.js"></script>
+<script src="js/solver-ui.js"></script>
 </body>
 </html>
