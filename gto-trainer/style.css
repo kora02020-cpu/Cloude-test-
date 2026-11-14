@@ -124,3 +124,15 @@ footer { text-align: center; padding: 20px 16px 32px; }
 #hpLog { list-style: decimal inside; }
 #hpLog li .good { color: #6ee7a8; } #hpLog li .ok { color: var(--accent); } #hpLog li .bad { color: #ff8a8a; }
 @media (max-width: 720px) { .board .card { width: 44px; height: 62px; font-size: 1.1rem; } .eq-compare { grid-template-columns: 1fr; } }
+
+.actions .check { background: #5b6675; }
+.opt-table-wrap { overflow-x: auto; margin: 8px 0; }
+.opt-table { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.opt-table th, .opt-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #ffffff20; white-space: nowrap; }
+.opt-table th:first-child, .opt-table td:first-child { text-align: left; }
+.opt-table th { font-weight: 500; color: #cfe8da; font-size: .78rem; }
+.opt-table tr.best td { color: #6ee7a8; font-weight: 600; }
+.opt-table tr.mine td { background: #ffffff14; }
+.hp-table .feedback { max-width: 560px; }
+.controls label { max-width: 100%; min-width: 0; flex-wrap: wrap; }
+.controls select { max-width: 100%; min-width: 0; }

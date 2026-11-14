@@ -173,30 +173,131 @@
     st.range = st.range.filter(c => !blocked(c, dead));
     $('hpFeedback').innerHTML = '';
     $('hpActions').innerHTML = '';
-    const lead = st.spot.heroIP ? '' : 'あなたはチェック。';
+    setNext(null);
+    renderTable();
     if (st.stack <= 0) { // オールイン済み
       st.log.push({ text: `${STREETS[street]}: オールイン済みのためカードを開くだけ` });
       renderTable();
-      return street < 3 ? setNext(`${STREETS[street + 1]}へ`, () => startStreet(street + 1)) : setNext('ショーダウン', showdown);
+      return nextStreet('');
     }
+    // OOP なら先にあなたが行動、IP なら相手が先に行動
+    if (st.spot.heroIP) villainAct(street, board, '');
+    else heroOption(street, board, '');
+  }
+  function nextStreet(prefix) {
+    if (st.street < 3) setNext(`${prefix}${STREETS[st.street + 1]}へ`, () => startStreet(st.street + 1));
+    else setNext(`${prefix}ショーダウン`, showdown);
+  }
+
+  // 相手の行動（ベット or チェック）。lead はそれまでの流れの説明
+  function villainAct(street, board, lead) {
     const size = BET_SIZES[Math.floor(Math.random() * BET_SIZES.length)];
     const bet = Math.min(Math.round(size * st.pot * 10) / 10, st.stack);
     const split = splitRange(st.range, board, bet / st.pot);
     const bets = split.bet.some(c => key(c) === key(st.vill));
-    renderTable();
+    $('hpActions').innerHTML = ''; setNext(null);
     if (!bets) {
       st.range = split.check;
-      st.log.push({ text: `${STREETS[street]}: ${lead}相手はチェック` });
-      $('hpStreet').innerHTML = `${STREETS[street]}<div class="spot-desc">${lead}相手はチェックしました</div>`;
-      calcLater(() => E.equity(st.hero, st.range, board, 8000), r => {
-        $('hpFeedback').innerHTML = `<p class="muted">相手のチェックレンジに対するあなたのエクイティ: <b>${pct(r.equity)}</b></p>`;
-      });
+      if (st.spot.heroIP) { // 相手チェック → あなたの番
+        st.log.push({ text: `${STREETS[street]}: 相手はチェック` });
+        renderTable();
+        return heroOption(street, board, '相手はチェックしました。');
+      }
+      st.log.push({ text: `${STREETS[street]}: ${lead}相手もチェック` });
+      $('hpStreet').innerHTML = `${STREETS[street]}<div class="spot-desc">${lead}相手もチェックしました</div>`;
+      $('hpFeedback').innerHTML = '';
       renderTable();
-      return street < 3 ? setNext(`チェックして${STREETS[street + 1]}へ`, () => startStreet(street + 1)) : setNext('チェックしてショーダウン', showdown);
+      return nextStreet('');
     }
     st.pending = { bet, size: bet / st.pot, betRange: split.bet, board };
     $('hpStreet').innerHTML = `${STREETS[street]}<div class="spot-desc">${lead}相手が <b>${bb(bet)}</b>（ポットの${Math.round(bet / st.pot * 100)}%）ベット</div>`;
+    renderTable();
     setButtons([['コール', 'call', () => decide('call')], ['フォールド', 'fold', () => decide('fold')]]);
+  }
+
+  // 相手がベットに対してディフェンスするレンジ（最小ディフェンス頻度 MDF = ポット ÷ (ポット + ベット) まで、強い順。ドローはワンペア相当として扱う）
+  const DRAW_SCORE = (1 << 20) | (6 << 16);
+  function defendRange(range, board, B, pot) {
+    const mdf = pot / (pot + B);
+    const scored = range.map(c => {
+      const sc = E.eval7([c[0], c[1], ...board]);
+      return { c, k: hasDraw(c, board) ? Math.max(sc, DRAW_SCORE) : sc };
+    }).sort((a, b) => b.k - a.k);
+    const total = scored.reduce((a, x) => a + x.c[2], 0);
+    const out = []; let w = 0;
+    for (const x of scored) { if (w >= mdf * total) break; out.push(x.c); w += x.c[2]; }
+    return { calls: out, foldFreq: 1 - w / total };
+  }
+
+  // あなたの行動: チェック or ベット
+  function heroOption(street, board, lead) {
+    const sizes = [0.33, 0.75, 1.25].map(f => Math.min(Math.round(f * st.pot * 10) / 10, st.stack))
+      .filter((b, i, arr) => b > 0 && arr.indexOf(b) === i);
+    st.heroPending = { board, lead, sizes, done: false };
+    $('hpStreet').innerHTML = `${STREETS[street]}<div class="spot-desc">${lead}あなたのアクションは？</div>`;
+    setButtons([['チェック', 'check', () => heroDecide(-1)],
+      ...sizes.map((b, i) => [`ベット ${bb(b)}（${Math.round(b / st.pot * 100)}%）`, 'raise', () => heroDecide(i)])]);
+  }
+
+  function heroDecide(idx) {
+    const hp = st.heroPending; if (!hp || hp.done) return;
+    hp.done = true;
+    const btns = document.querySelectorAll('#hpActions button');
+    btns.forEach((b, i) => { b.disabled = true; if (i === idx + 1) b.classList.add('chosen'); });
+    const pot = st.pot, board = hp.board;
+    calcLater(() => {
+      const eqAll = E.equity(st.hero, st.range, board, 10000).equity;
+      const opts = [{ label: 'チェック', ev: eqAll * pot, eq: eqAll, fold: null }];
+      for (const B of hp.sizes) {
+        const d = defendRange(st.range, board, B, pot);
+        const eqC = d.calls.length ? E.equity(st.hero, d.calls, board, 10000).equity : 0;
+        opts.push({ label: `ベット ${bb(B)}`, B, ev: d.foldFreq * pot + (1 - d.foldFreq) * (eqC * (pot + 2 * B) - B),
+          eq: eqC, fold: d.foldFreq, calls: d.calls });
+      }
+      return opts;
+    }, opts => {
+      const bestEV = Math.max(...opts.map(o => o.ev));
+      const mine = opts[idx + 1];
+      const loss = bestEV - mine.ev;
+      const cls = loss < 1e-9 ? 'good' : loss < 0.25 ? 'ok' : 'bad';
+      const verdict = { good: '正解 ✓', ok: '僅差（ほぼ同じEV）', bad: 'ミス ✗' }[cls];
+      stats.decisions++; if (cls !== 'bad') stats.good++; stats.evLoss += loss; st.loss += loss;
+      store.set('handStats', stats); renderStats();
+      const best = opts.find(o => o.ev === bestEV);
+      st.log.push({ text: `${STREETS[st.street]}: ${hp.lead}あなたは${mine.label}${cls !== 'good' ? `（最善: ${best.label}）` : ''}`, res: verdict, cls });
+      $('hpFeedback').innerHTML = `<div class="verdict ${cls}">${verdict}</div>
+        <div class="opt-table-wrap"><table class="opt-table">
+          <thead><tr><th>選択肢</th><th>相手のフォールド率</th><th>エクイティ</th><th>EV</th></tr></thead>
+          <tbody>${opts.map(o => `<tr class="${o === mine ? 'mine' : ''} ${o.ev === bestEV ? 'best' : ''}">
+            <td>${o.label}${o.ev === bestEV ? ' ★' : ''}</td><td>${o.fold === null ? '–' : pct(o.fold)}</td>
+            <td>${pct(o.eq)}${o.fold === null ? '' : '<span class="muted small"> (コールされた時)</span>'}</td>
+            <td>${o.ev.toFixed(2)}bb</td></tr>`).join('')}</tbody></table></div>
+        <p class="muted small">EV はこのストリート以降にポットから得られる見込みの額です。チェック = エクイティ × ポット（以降チェックで進むと仮定）。
+        ベット = フォールド率 × ポット + コール率 × (エクイティ × (ポット + ベット×2) − ベット)。相手は最小ディフェンス頻度まで強い順（ドロー含む）にコールします。</p>`;
+      if (idx === -1) {
+        if (st.spot.heroIP) { // チェックバック
+          st.log.push({ text: `${STREETS[st.street]}: チェックで回る` });
+          renderTable(); return nextStreet('');
+        }
+        renderTable();
+        return setNext('相手のアクションへ', () => villainAct(st.street, board, 'あなたはチェック。'));
+      }
+      const B = mine.B;
+      if (mine.calls.some(c => key(c) === key(st.vill))) {
+        st.pot += 2 * B; st.stack -= B; st.range = mine.calls;
+        st.log.push({ text: `${STREETS[st.street]}: 相手はコール` });
+        $('hpStreet').innerHTML = `${STREETS[st.street]}<div class="spot-desc">あなたの ${bb(B)} ベットに相手はコール</div>`;
+        renderTable(); return nextStreet('');
+      }
+      // 相手フォールド → ハンド終了
+      st.log.push({ text: `${STREETS[st.street]}: 相手はフォールド`, res: `ポット ${bb(st.pot)} を獲得`, cls: 'good' });
+      st.showdown = true;
+      $('hpStreet').innerHTML = `${STREETS[st.street]}<div class="spot-desc">相手はフォールドしました（参考: 相手の手札は ${st.vill.map(E.cardToString).join(' ')}）</div>`;
+      $('hpFeedback').insertAdjacentHTML('beforeend', `<div class="verdict good">相手フォールド：ポット ${bb(st.pot)} を獲得</div>
+        <div class="freq-row"><span>このハンドの判断ミスによるEV損失</span><b>${st.loss ? '-' + st.loss.toFixed(2) + 'bb' : 'なし'}</b></div>`);
+      renderTable();
+      setNext('次のハンド', newHand);
+    });
   }
 
   function calcLater(fn, done) {
@@ -229,9 +330,7 @@
       // 練習のため、フォールドしてもコールしたものとして続行
       st.pot += 2 * p.bet; st.stack -= p.bet; st.range = p.betRange; st.pending = null;
       renderTable();
-      const cont = choice === 'fold' ? '（コールしたものとして）' : '';
-      if (st.street < 3) setNext(`${STREETS[st.street + 1]}へ${cont}`, () => startStreet(st.street + 1));
-      else setNext(`ショーダウン${cont}`, showdown);
+      nextStreet(choice === 'fold' ? '（コールしたものとして）' : '');
     });
   }
 
