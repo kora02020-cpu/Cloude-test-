@@ -12,7 +12,7 @@ function defaultState() {
     version: 1,
     onboarded: false,
     createdAt: today(),
-    profile: { name: "", anchor: "朝のコーヒーを淹れたら", amount: 100, letter: "", sound: true },
+    profile: { name: "", anchor: "朝のコーヒーを淹れたら", amount: 100, letter: "", sound: true, remindTime: "07:30", notify: false, installDismissed: false },
     stepUp: null,              // { amount, from }
     lastStepUpOffer: null,
     goals: [],
@@ -31,7 +31,12 @@ function defaultState() {
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return Object.assign(defaultState(), JSON.parse(raw));
+    if (raw) {
+      const obj = JSON.parse(raw);
+      const st = Object.assign(defaultState(), obj);
+      st.profile = Object.assign(defaultState().profile, obj.profile || {});
+      return st;
+    }
   } catch (e) { /* 保存領域が使えない環境でも動かす */ }
   return defaultState();
 }
@@ -270,7 +275,7 @@ function coin() {
       o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.4);
     });
   } catch (e) { /* 音が出せない環境 */ }
-  try { navigator.vibrate && navigator.vibrate(25); } catch (e) { /* noop */ }
+  try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(25); } catch (e) { /* noop */ }
 }
 
 function confetti(count) {
@@ -343,6 +348,8 @@ function checkin() {
 /* ===================== 描画 ===================== */
 function render() {
   renderTop();
+  renderInstallCard();
+  syncPhone();
   renderHome();
   renderLedger();
   renderChallenge();
@@ -350,7 +357,8 @@ function render() {
 
 function renderTop() {
   const l = level();
-  $("level-chip").textContent = `Lv.${l.lv} ${l.title}`;
+  $("level-chip").innerHTML = `Lv.${l.lv}<span class="lt"> ${esc(l.title)}</span>`;
+  $("level-chip").title = l.title;
 }
 
 function renderHome() {
@@ -763,7 +771,9 @@ function modalSettings() {
       try {
         const obj = JSON.parse($("st-data").value);
         if (!obj || !Array.isArray(obj.entries)) throw new Error();
-        state = Object.assign(defaultState(), obj); save(); closeModal(); render(); toast("復元しました");
+        state = Object.assign(defaultState(), obj);
+        state.profile = Object.assign(defaultState().profile, obj.profile || {});
+        save(); closeModal(); render(); toast("復元しました");
       } catch (e) { toast("データの形式が正しくありません"); }
     };
     $("st-reset").onclick = () => { $("st-reset-confirm").hidden = false; };
@@ -841,7 +851,7 @@ function onboarding() {
         const g = { id: uid(), name: draft.goalName, target: Math.round(draft.target), deadline: draft.deadline };
         Object.assign(state, defaultState(), {
           onboarded: true, createdAt: today(), goals: [g], activeGoalId: g.id,
-          profile: { name: draft.name, anchor: draft.anchor, amount: draft.amount, letter: draft.letter, sound: true },
+          profile: Object.assign(defaultState().profile, { name: draft.name, anchor: draft.anchor, amount: draft.amount, letter: draft.letter }),
         });
         save(); closeModal(); render(); confetti(120);
         showReward({ seal: "始", kicker: "スタート", title: "印帳カードを作りました", text: "目標設定と宣言で、最初の2つの印はもう押されています。残りは8つ。まずは今日の1回から。" });
@@ -856,7 +866,7 @@ function loadDemo() {
   const g = { id: uid(), name: "夏の沖縄旅行（サンプル）", target: 120000, deadline: addDays(t, 180) };
   const s = Object.assign(defaultState(), {
     onboarded: true, demo: true, createdAt: addDays(t, -40), goals: [g], activeGoalId: g.id,
-    profile: { name: "サンプル", anchor: "朝のコーヒーを淹れたら", amount: 200, letter: "海で思いきり泳いでね", sound: true },
+    profile: Object.assign(defaultState().profile, { name: "サンプル", anchor: "朝のコーヒーを淹れたら", amount: 200, letter: "海で思いきり泳いでね" }),
     freezes: 1,
   });
   const notes = ["コンビニコーヒー", "お菓子", "ランチ外食", "衝動買い"];
@@ -947,7 +957,285 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if (!$("reward").hidden) $("reward").hidden = true; else closeModal(); }
 });
 
+/* ===================== スマホ連携 ===================== */
+const STATUS_CACHE = "kotsukotsu-status";
+const STATUS_URL = "./__status.json";
+let deferredInstall = null;
+let swReg = null;
+
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isAndroid = () => /Android/.test(navigator.userAgent);
+const remindTime = () => state.profile.remindTime || "07:30";
+
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; });
+window.addEventListener("appinstalled", () => { deferredInstall = null; toast("ホーム画面に追加しました"); renderInstallCard(); });
+
+async function registerSW() {
+  if (!("serviceWorker" in navigator) || !window.isSecureContext) return null;
+  try {
+    swReg = await navigator.serviceWorker.register("sw.js");
+    return swReg;
+  } catch (e) { return null; }
+}
+
+// Service Worker が通知判断に使う「今日の状態」を書き出す
+async function writeStatus() {
+  if (!("caches" in window)) return;
+  try {
+    const c = await caches.open(STATUS_CACHE);
+    const old = await c.match(STATUS_URL).then((r) => (r ? r.json() : {})).catch(() => ({}));
+    const last = state.entries.filter((e) => e.type === "checkin").map((e) => e.date).sort().pop() || null;
+    const s = {
+      notify: !!state.profile.notify, time: remindTime(), anchor: state.profile.anchor,
+      amountText: yen(state.profile.amount), lastCheckin: last, streak: streak(),
+      lastNotified: old.lastNotified || null,
+    };
+    await c.put(STATUS_URL, new Response(JSON.stringify(s), { headers: { "Content-Type": "application/json" } }));
+  } catch (e) { /* 使えない環境 */ }
+}
+
+// アプリアイコンの数字バッジ（未チェックなら1）
+function updateBadge() {
+  try {
+    if (!("setAppBadge" in navigator)) return;
+    if (state.onboarded && !checkedInToday()) navigator.setAppBadge(1).catch(() => {});
+    else navigator.clearAppBadge().catch(() => {});
+  } catch (e) { /* noop */ }
+}
+
+function syncPhone() { writeStatus(); updateBadge(); }
+
+function renderInstallCard() {
+  $("install-card").hidden = !state.onboarded || isStandalone() || !!state.profile.installDismissed;
+}
+
+function download(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function appUrl() { return location.href.split(/[?#]/)[0]; }
+
+function buildICS() {
+  const [h, m] = remindTime().split(":");
+  let start = today();
+  const now = new Date();
+  if (now.getHours() * 60 + now.getMinutes() >= Number(h) * 60 + Number(m)) start = addDays(start, 1);
+  const dt = start.replace(/-/g, "") + `T${h}${m}00`;
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const fold = (s) => s.replace(/[\;,]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+  const summary = fold(`貯金の印を押す（${yen(state.profile.amount)}）`);
+  const desc = fold(`${state.profile.anchor}、${yen(state.profile.amount)}を貯金する。\n${appUrl()}?action=checkin`);
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//kotsukotsu//JA", "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT", `UID:kotsukotsu-daily-${Date.now()}@kotsukotsu`, `DTSTAMP:${stamp}`,
+    `DTSTART:${dt}`, "DURATION:PT5M", "RRULE:FREQ=DAILY", `SUMMARY:${summary}`, `DESCRIPTION:${desc}`,
+    `URL:${appUrl()}?action=checkin`,
+    "BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:PT0M", `DESCRIPTION:${summary}`, "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR", "",
+  ].join("\r\n");
+}
+
+function googleCalUrl() {
+  const [h, m] = remindTime().split(":");
+  let start = today();
+  const now = new Date();
+  if (now.getHours() * 60 + now.getMinutes() >= Number(h) * 60 + Number(m)) start = addDays(start, 1);
+  const d = start.replace(/-/g, "");
+  const endMin = Number(h) * 60 + Number(m) + 5;
+  const end = `${d}T${String(Math.floor(endMin / 60) % 24).padStart(2, "0")}${String(endMin % 60).padStart(2, "0")}00`;
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `貯金の印を押す（${yen(state.profile.amount)}）`,
+    dates: `${d}T${h}${m}00/${end}`,
+    recur: "RRULE:FREQ=DAILY",
+    details: `${state.profile.anchor}、${yen(state.profile.amount)}を貯金する。\n${appUrl()}?action=checkin`,
+  });
+  return "https://calendar.google.com/calendar/render?" + q.toString();
+}
+
+async function enableNotifications() {
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+    toast("このブラウザは通知に対応していません。カレンダーのリマインダーを使ってください");
+    return "unsupported";
+  }
+  if (isIOS() && !isStandalone()) {
+    toast("iPhoneでは、先にホーム画面に追加してからそのアプリで通知をオンにしてください");
+    return "need-install";
+  }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") { toast("通知が許可されませんでした。スマホの設定から許可できます"); return "denied"; }
+  state.profile.notify = true; save();
+  const reg = swReg || (await registerSW());
+  await writeStatus();
+  let periodic = false;
+  try {
+    if (reg && "periodicSync" in reg) {
+      const st = await navigator.permissions.query({ name: "periodic-background-sync" });
+      if (st.state === "granted") {
+        await reg.periodicSync.register("daily-reminder", { minInterval: 60 * 60 * 1000 });
+        periodic = true;
+      }
+    }
+  } catch (e) { /* 非対応 */ }
+  state.profile.periodic = periodic; save();
+  return periodic ? "periodic" : "foreground";
+}
+
+async function testNotification() {
+  const reg = swReg || (await registerSW());
+  if (!reg || Notification.permission !== "granted") { toast("先に通知をオンにしてください"); return; }
+  await (await navigator.serviceWorker.ready).showNotification("コツコツ印帳", {
+    body: `${state.profile.anchor}、${yen(state.profile.amount)}を貯金する`,
+    icon: "icons/icon-192.png", tag: "test", data: { url: "./index.html?action=checkin" },
+  });
+}
+
+async function shareProgress() {
+  const l = level();
+  const g = activeGoal();
+  const text = `コツコツ印帳で${streak()}日連続貯金中！ 合計${yen(total())}${g ? `（目標「${g.name}」）` : ""}・Lv.${l.lv} ${l.title}`;
+  try {
+    if (navigator.share) { await navigator.share({ title: "コツコツ印帳", text }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(text); toast("シェア用の文章をコピーしました"); }
+  catch (e) { toast(text); }
+}
+
+function modalPhone() {
+  const standalone = isStandalone();
+  const notifOn = state.profile.notify && "Notification" in window && Notification.permission === "granted";
+  const ios = isIOS(), android = isAndroid();
+  const installSteps = ios
+    ? `<ol><li>Safariでこのページを開く</li><li>下の「共有」ボタン（四角から矢印）をタップ</li><li>「ホーム画面に追加」を選ぶ</li></ol>`
+    : `<ol><li>Chromeでこのページを開く</li><li>右上の「︙」メニューをタップ</li><li>「ホーム画面に追加」または「アプリをインストール」を選ぶ</li></ol>`;
+  openModal(`
+    <h3>スマホ連携</h3>
+    <p class="lead">スマホに入れておくと、きっかけの行動の直後にすぐ印を押せます。行動までの手間が少ないほど習慣は続きます。</p>
+
+    <section class="phone-sec">
+      <h4>ホーム画面に追加${standalone ? '<span class="status-pill ok">追加済み</span>' : ""}</h4>
+      <p>アプリとして全画面で開け、オフラインでも使えます。${android ? "アイコンを長押しすると「今日の印を押す」「我慢した」に直接飛べます。" : ""}</p>
+      ${standalone ? "" : deferredInstall ? `<button class="btn shu" id="ph-install">ホーム画面に追加する</button>` : installSteps}
+    </section>
+
+    <section class="phone-sec">
+      <h4>毎日のリマインダー</h4>
+      <div class="inline-field"><label for="ph-time">通知する時刻</label><input type="time" id="ph-time" value="${remindTime()}"></div>
+      <p><b>カレンダーに登録（iPhone・Android どちらでも確実）</b><br>毎日この時刻に通知が鳴る予定を追加します。予定のURLから印を押す画面に直接飛べます。</p>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn" id="ph-ics">${ios ? "iPhoneのカレンダーに追加" : "カレンダーファイル(.ics)"}</button>
+        <a class="btn" id="ph-gcal" href="#" target="_blank" rel="noopener">Googleカレンダーに追加</a>
+      </div>
+      <p style="margin-top:12px"><b>アプリの通知</b>${notifOn ? '<span class="status-pill ok">オン</span>' : '<span class="status-pill">オフ</span>'}<br>
+      ${ios ? "iPhoneではアプリを閉じている間の定時通知ができないため、カレンダー登録をおすすめします。" : "Androidのインストール済みアプリでは、印がまだの日に通知します（時刻はブラウザの判断で多少前後します）。"}</p>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn" id="ph-notify">${notifOn ? "通知を再設定" : "通知をオンにする"}</button>
+        ${notifOn ? `<button class="btn ghost" id="ph-test">テスト通知</button><button class="btn ghost" id="ph-off">オフにする</button>` : ""}
+      </div>
+    </section>
+
+    ${ios ? `<section class="phone-sec">
+      <h4>iPhoneのショートカットで自動化</h4>
+      <p>「ショートカット」アプリの「オートメーション」で、きっかけと同じタイミングにこのアプリを開けます。</p>
+      <ol><li>ショートカット → オートメーション → 新規</li><li>「時刻」や「アラームを止めたとき」「自宅に到着したとき」を選ぶ</li><li>アクション「URLを開く」に下のURLを貼り付ける</li></ol>
+      <div class="calc" id="ph-url" style="overflow-wrap:anywhere">${esc(appUrl())}?action=checkin</div>
+      <button class="btn" id="ph-copy">URLをコピー</button>
+    </section>` : ""}
+
+    <section class="phone-sec">
+      <h4>機種変更・パソコンとのデータ移行</h4>
+      <p>データはこの端末の中だけに保存されています。ファイルに書き出して、移行先で読み込んでください。</p>
+      <div class="row-btns" style="margin-top:0">
+        <button class="btn" id="ph-export">ファイルに書き出す</button>
+        <label class="btn" for="ph-import" style="display:inline-block">ファイルから読み込む</label>
+        <input type="file" id="ph-import" accept="application/json,.json" hidden>
+      </div>
+    </section>
+
+    <section class="phone-sec">
+      <h4>進捗をシェア</h4>
+      <p>誰かに宣言すると続けやすくなります。LINEやSNSに送れます。</p>
+      <button class="btn" id="ph-share">シェアする</button>
+    </section>
+
+    <div class="row-btns"><button class="btn primary" data-close>閉じる</button></div>`, () => {
+    const setGcal = () => { $("ph-gcal").href = googleCalUrl(); };
+    setGcal();
+    $("ph-time").onchange = () => { state.profile.remindTime = $("ph-time").value || "07:30"; save(); syncPhone(); setGcal(); toast(`リマインダーを${remindTime()}にしました`); };
+    if ($("ph-install")) $("ph-install").onclick = async () => {
+      deferredInstall.prompt();
+      await deferredInstall.userChoice.catch(() => {});
+      deferredInstall = null; modalPhone();
+    };
+    $("ph-ics").onclick = () => {
+      state.profile.remindTime = $("ph-time").value || "07:30"; save();
+      download("kotsukotsu-reminder.ics", buildICS(), "text/calendar");
+      toast("カレンダーファイルを作りました。開いて「追加」を選んでください");
+    };
+    $("ph-notify").onclick = async () => {
+      const r = await enableNotifications();
+      if (r === "periodic") toast("通知をオンにしました。印がまだの日にお知らせします");
+      else if (r === "foreground") toast("通知をオンにしました。閉じている間の通知はカレンダー登録も併用してください");
+      if (["periodic", "foreground"].includes(r)) modalPhone();
+    };
+    if ($("ph-test")) $("ph-test").onclick = testNotification;
+    if ($("ph-off")) $("ph-off").onclick = async () => {
+      state.profile.notify = false; save(); syncPhone();
+      try { if (swReg && "periodicSync" in swReg) await swReg.periodicSync.unregister("daily-reminder"); } catch (e) { /* noop */ }
+      modalPhone();
+    };
+    if ($("ph-copy")) $("ph-copy").onclick = () => {
+      const text = $("ph-url").textContent;
+      navigator.clipboard.writeText(text).then(() => toast("コピーしました"), () => {
+        const r = document.createRange(); r.selectNodeContents($("ph-url"));
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("選択しました。コピーしてください");
+      });
+    };
+    $("ph-export").onclick = () => {
+      download(`kotsukotsu-backup-${today()}.json`, JSON.stringify(state, null, 1), "application/json");
+      toast("バックアップファイルを書き出しました");
+    };
+    $("ph-import").onchange = async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const obj = JSON.parse(await f.text());
+        if (!obj || !Array.isArray(obj.entries)) throw new Error();
+        state = Object.assign(defaultState(), obj);
+        state.profile = Object.assign(defaultState().profile, obj.profile || {});
+        save(); closeModal(); boot(); toast(`${state.entries.length}件の記録を読み込みました`);
+      } catch (err) { toast("バックアップファイルの形式が正しくありません"); }
+    };
+    $("ph-share").onclick = shareProgress;
+  });
+}
+
+// ホーム画面のショートカット・通知・カレンダーから来たときの動作
+function handleAction() {
+  const params = new URLSearchParams(location.search);
+  const action = params.get("action");
+  if (!action || !state.onboarded) return;
+  try { history.replaceState(null, "", location.pathname); } catch (e) { /* noop */ }
+  if (action === "checkin") checkin();
+  else if (action === "skip") modalSkip();
+  else if (action === "roundup") modalRoundup();
+}
+
+$("open-phone").addEventListener("click", modalPhone);
+$("install-open").addEventListener("click", modalPhone);
+$("install-dismiss").addEventListener("click", () => { state.profile.installDismissed = true; save(); renderInstallCard(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && today() !== lastDay) { lastDay = today(); boot(); }
+});
+
 /* ===================== 起動 ===================== */
+let lastDay = today();
 function boot() {
   renderScience();
   if (!state.onboarded) { render(); onboarding(); return; }
@@ -958,7 +1246,8 @@ function boot() {
   else if (rules.added) toast(`自動積立 ${yen(rules.sum)}を記録しました`);
 }
 boot();
+handleAction();
+registerSW().then(() => syncPhone());
 
 // 日付をまたいで開きっぱなしの場合に備える
-let lastDay = today();
 setInterval(() => { if (today() !== lastDay) { lastDay = today(); boot(); } }, 60000);

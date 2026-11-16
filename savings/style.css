@@ -71,7 +71,9 @@ button { cursor: pointer; }
   border: 2px solid var(--shu); color: var(--shu); border-radius: 6px;
   font-family: var(--f-display); font-size: 16px; transform: rotate(-6deg);
 }
-.brand-name { font-family: var(--f-display); font-size: 18px; letter-spacing: .02em; }
+.brand-name { font-family: var(--f-display); font-size: 18px; letter-spacing: .02em; white-space: nowrap; }
+.brand { min-width: 0; }
+@media (max-width: 440px) { .level-chip .lt { display: none; } .brand-name { font-size: 16px; } }
 .topbar-meta { display: flex; align-items: center; gap: 8px; }
 .level-chip {
   font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
@@ -79,7 +81,7 @@ button { cursor: pointer; }
 }
 .icon-btn {
   border: 1px solid var(--rule); background: var(--sheet); border-radius: 99px;
-  padding: 4px 12px; font-size: 13px;
+  padding: 4px 12px; font-size: 13px; white-space: nowrap;
 }
 
 main { display: grid; gap: 14px; }
@@ -174,6 +176,19 @@ main { display: grid; gap: 14px; }
   background: var(--gold-soft); border-radius: 0 8px 8px 0; font-size: 14px;
 }
 
+/* Install / phone */
+.install-card { display: grid; gap: 10px; }
+.install-text { display: grid; gap: 2px; }
+.phone-sec { border-top: 1px solid var(--rule); padding-top: 14px; margin-top: 14px; }
+.phone-sec:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.phone-sec h4 { margin: 0 0 4px; font-size: 15px; }
+.phone-sec p { margin: 0 0 10px; font-size: 13px; color: var(--ink-soft); }
+.phone-sec ol { margin: 0 0 10px; padding-left: 20px; font-size: 13px; color: var(--ink-soft); }
+.status-pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--paper); color: var(--ink-soft); margin-left: 6px; vertical-align: 2px; }
+.status-pill.ok { background: var(--good-soft); color: var(--good); }
+.inline-field { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; }
+.inline-field input { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; padding: 8px 10px; }
+
 /* Step up */
 .stepup-title { font-weight: 700; margin: 0 0 4px; }
 .row-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -182,6 +197,7 @@ main { display: grid; gap: 14px; }
 .btn {
   border: 1px solid var(--rule); background: var(--sheet); border-radius: 10px; padding: 10px 16px; font-weight: 700;
 }
+a.btn { color: inherit; text-decoration: none; display: inline-block; }
 .btn.primary { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
 .btn.shu { background: var(--shu); color: #fff; border-color: var(--shu); }
 .btn.ghost { background: transparent; }

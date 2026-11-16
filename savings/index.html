@@ -9,6 +9,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10141f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="印帳">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 <div class="shell">
@@ -19,6 +28,7 @@
     </div>
     <div class="topbar-meta">
       <span class="level-chip" id="level-chip">Lv.1</span>
+      <button class="icon-btn" id="open-phone" aria-label="スマホ連携">スマホ</button>
       <button class="icon-btn" id="open-settings" aria-label="設定">設定</button>
     </div>
   </header>
@@ -27,6 +37,17 @@
     <!-- ホーム -->
     <section class="view" id="view-home" data-view="home">
       <div class="banner" id="fresh-start" hidden></div>
+
+      <div class="card install-card" id="install-card" hidden>
+        <div class="install-text">
+          <b>スマホのホーム画面に追加</b>
+          <span class="muted">アプリのように1タップで開けて、通知やショートカットも使えます。</span>
+        </div>
+        <div class="row-btns" style="margin:0">
+          <button class="btn shu" id="install-open">設定する</button>
+          <button class="btn ghost" id="install-dismiss">あとで</button>
+        </div>
+      </div>
 
       <div class="hero">
         <div class="hero-label">これまでに貯めた額</div>
