@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>コツコツ印帳</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-seal" aria-hidden="true">貯</span>
+      <span class="brand-name">コツコツ印帳</span>
+    </div>
+    <div class="topbar-meta">
+      <span class="level-chip" id="level-chip">Lv.1</span>
+      <button class="icon-btn" id="open-settings" aria-label="設定">設定</button>
+    </div>
+  </header>
+
+  <main id="views">
+    <!-- ホーム -->
+    <section class="view" id="view-home" data-view="home">
+      <div class="banner" id="fresh-start" hidden></div>
+
+      <div class="hero">
+        <div class="hero-label">これまでに貯めた額</div>
+        <div class="hero-total" id="total-amount">¥0</div>
+        <div class="hero-goal">
+          <div class="goal-line">
+            <span id="goal-name">目標</span>
+            <span class="goal-nums"><span id="goal-pct">0</span>%</span>
+          </div>
+          <div class="bar"><div class="bar-fill" id="goal-bar"></div></div>
+          <div class="goal-msg" id="goal-msg"></div>
+        </div>
+      </div>
+
+      <div class="checkin-card">
+        <div class="intention" id="intention-text">朝のコーヒーを淹れたら、¥100を貯金する</div>
+        <button class="checkin-btn" id="checkin-btn">
+          <span class="checkin-main">今日の分を貯金した</span>
+          <span class="checkin-sub" id="checkin-sub">タップして印を押す</span>
+        </button>
+        <div class="streak-row">
+          <div class="stat">
+            <span class="stat-num" id="streak-num">0</span>
+            <span class="stat-label">日連続</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" id="freeze-num">0</span>
+            <span class="stat-label">おやすみ券</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num" id="habit-num">0</span>
+            <span class="stat-label">/ 66日 習慣化</span>
+          </div>
+        </div>
+        <div class="bar thin"><div class="bar-fill habit" id="habit-bar"></div></div>
+      </div>
+
+      <div class="card" id="stepup-card" hidden></div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>印帳カード</h2>
+          <span class="muted" id="card-count">1枚目</span>
+        </div>
+        <div class="stamp-grid" id="stamp-grid"></div>
+        <p class="hint">最初の2つは「目標設定」と「宣言」の印です。あと少しで1枚埋まります。</p>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick" data-open="skip">
+          <span class="quick-title">我慢した</span>
+          <span class="quick-sub">買わなかった分を貯金</span>
+        </button>
+        <button class="quick" data-open="roundup">
+          <span class="quick-title">おつり貯金</span>
+          <span class="quick-sub">端数を切り上げて貯金</span>
+        </button>
+        <button class="quick" data-open="manual">
+          <span class="quick-title">自由に入金</span>
+          <span class="quick-sub">臨時収入やボーナス</span>
+        </button>
+        <button class="quick" data-nav="challenge">
+          <span class="quick-title">100マス</span>
+          <span class="quick-sub">ランダムに1マス引く</span>
+        </button>
+      </div>
+
+      <div class="card future">
+        <div class="card-head">
+          <h2>未来の自分</h2>
+          <span class="muted">今のペースが続くと</span>
+        </div>
+        <div class="future-grid">
+          <div><span class="f-label">1年後</span><span class="f-num" id="f1">¥0</span></div>
+          <div><span class="f-label">5年後</span><span class="f-num" id="f5">¥0</span></div>
+          <div><span class="f-label">10年後</span><span class="f-num" id="f10">¥0</span></div>
+        </div>
+        <p class="hint" id="future-basis"></p>
+        <blockquote class="letter" id="future-letter" hidden></blockquote>
+      </div>
+    </section>
+
+    <!-- 通帳 -->
+    <section class="view" id="view-ledger" data-view="ledger" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>通帳</h2>
+          <span class="muted" id="ledger-count">0件</span>
+        </div>
+        <div class="week-chart" id="week-chart" aria-label="直近14日の貯金額"></div>
+        <div class="ledger" id="ledger"></div>
+        <p class="empty" id="ledger-empty">まだ記録がありません。ホームで最初の印を押しましょう。</p>
+      </div>
+    </section>
+
+    <!-- チャレンジ -->
+    <section class="view" id="view-challenge" data-view="challenge" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>自動積立ルール</h2>
+          <button class="text-btn" data-open="rule">＋ 追加</button>
+        </div>
+        <p class="hint">銀行の「自動積立」や給料日の先取り振替と同じ内容を登録しておくと、その日が来るたびに自動で記録されます。お金を動かすのは銀行側の設定で、このアプリは記録と見える化を担当します。</p>
+        <div id="rule-list" class="rule-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>100マス貯金</h2>
+          <span class="muted" id="masu-progress">0 / 100</span>
+        </div>
+        <p class="hint">「引く」を押すと残りのマスからランダムに1つ選ばれます。何が出るか分からない楽しさが続けるコツです。</p>
+        <div class="masu-controls">
+          <button class="btn primary" id="masu-draw">ランダムに引く</button>
+          <label class="unit-select">単位
+            <select id="masu-unit">
+              <option value="10">×10円 (合計50,500円)</option>
+              <option value="100">×100円 (合計505,000円)</option>
+            </select>
+          </label>
+        </div>
+        <div class="masu-grid" id="masu-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>目標</h2>
+          <button class="text-btn" data-open="goal">＋ 追加</button>
+        </div>
+        <div id="goal-list" class="goal-list"></div>
+      </div>
+    </section>
+
+    <!-- しくみ -->
+    <section class="view" id="view-science" data-view="science" hidden>
+      <div class="card prose">
+        <h2>このアプリに組み込んだ仕組み</h2>
+        <p>意志の力に頼らず、脳と行動の性質を利用して「気づいたら貯まっている」状態を作るための設計です。</p>
+        <div class="science-list" id="science-list"></div>
+        <p class="hint">※ 実際にお金を自動で移すには、銀行の自動積立・先取り貯金（給料日に別口座へ自動振替）を設定してください。それが一番効果の大きい「仕組み化」です。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="メイン">
+    <button class="tab active" data-nav="home">ホーム</button>
+    <button class="tab" data-nav="ledger">通帳</button>
+    <button class="tab" data-nav="challenge">チャレンジ</button>
+    <button class="tab" data-nav="science">しくみ</button>
+  </nav>
+</div>
+
+<!-- モーダル -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ごほうび -->
+<div class="reward-backdrop" id="reward" hidden>
+  <div class="reward-card" id="reward-card"></div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="app.js"></script>
+</body>
+</html>
