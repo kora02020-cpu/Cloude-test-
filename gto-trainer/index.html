@@ -47,13 +47,26 @@
       <label class="check"><input type="checkbox" id="focusMode" checked> 判断の難しいハンド中心</label>
       <button id="resetStats" class="ghost">成績リセット</button>
     </div>
-    <div class="table">
-      <div id="spotName" class="spot"></div>
-      <div id="heroCards" class="cards"></div>
-      <div id="actionButtons" class="actions"></div>
-      <div id="feedback" class="feedback"></div>
-      <button id="nextHand" class="primary hidden">次のハンド (Space)</button>
+    <div id="spotName" class="pk-title"></div>
+    <div class="pk-wrap">
+      <div class="pk-table" id="pkTable">
+        <div class="pk-felt"></div>
+        <div id="pkPot" class="pk-pot"></div>
+        <div id="pkSeats"></div>
+      </div>
     </div>
+    <div class="coach">
+      <div class="coach-face" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#2b3a4a"/><circle cx="32" cy="27" r="11" fill="#f2c9a0"/>
+          <path d="M20 24c0-8 5-13 12-13s12 5 12 13c-3-3-7-4-12-4s-9 1-12 4z" fill="#f5b942"/><rect x="18" y="22" width="28" height="4" rx="2" fill="#f5b942"/>
+          <circle cx="28" cy="28" r="1.4" fill="#222"/><circle cx="36" cy="28" r="1.4" fill="#222"/><path d="M28 33q4 3 8 0" stroke="#222" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M12 60c2-11 10-17 20-17s18 6 20 17" fill="#30a46c"/></svg>
+      </div>
+      <div class="coach-bubble"><div class="coach-name">コーチ</div><div id="coachMsg"></div></div>
+    </div>
+    <div id="actionButtons" class="actions pk-actions"></div>
+    <div id="feedback" class="feedback"></div>
+    <div class="pk-next"><button id="nextHand" class="primary hidden">次のハンド (Space)</button></div>
     <div class="scoreboard">
       <div><b id="sHands">0</b><span>ハンド数</span></div>
       <div><b id="sAcc">–</b><span>GTO精度</span></div>

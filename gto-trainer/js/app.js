@@ -130,6 +130,153 @@
     return `<div class="card ${SUIT_CLASS[suit]}">${rank === 'T' ? '10' : rank}<small>${SUIT_SYM[suit]}</small></div>`;
   }
 
+  // ---------- テーブル表示（座席・人・チップ） ----------
+  const ORDER = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];   // プリフロップの行動順
+  const POS_JA = { UTG: 'UTG', HJ: 'HJ', CO: 'CO', BTN: 'BTN (ボタン)', SB: 'SB (スモールブラインド)', BB: 'BB (ビッグブラインド)' };
+  // シナリオごとの「ここまでの流れ」。ev = [座席, 行動, 合計ベット額]
+  const SPOTS = {
+    UTG_RFI: { hero: 'UTG', ev: [], raiseTo: 2.5 }, HJ_RFI: { hero: 'HJ', ev: [], raiseTo: 2.5 },
+    CO_RFI: { hero: 'CO', ev: [], raiseTo: 2.5 }, BTN_RFI: { hero: 'BTN', ev: [], raiseTo: 2.5 },
+    SB_RFI: { hero: 'SB', ev: [], raiseTo: 3 },
+    BTN_vs_CO: { hero: 'BTN', ev: [['CO', 'raise', 2.5]], raiseTo: 7.5 },
+    SB_vs_BTN: { hero: 'SB', ev: [['BTN', 'raise', 2.5]], raiseTo: 11 },
+    BB_vs_BTN: { hero: 'BB', ev: [['BTN', 'raise', 2.5]], raiseTo: 11 },
+    BB_vs_SB: { hero: 'BB', ev: [['SB', 'raise', 3]], raiseTo: 9 },
+    UTG_vs_BTN3b: { hero: 'UTG', ev: [['UTG', 'raise', 2.5], ['BTN', 'raise', 7.5]], raiseTo: 19 },
+    CO_vs_BTN3b: { hero: 'CO', ev: [['CO', 'raise', 2.5], ['BTN', 'raise', 7.5]], raiseTo: 19 },
+    BTN_vs_BB3b: { hero: 'BTN', ev: [['BTN', 'raise', 2.5], ['BB', 'raise', 11]], raiseTo: 24 },
+    SB_vs_BB3b: { hero: 'SB', ev: [['SB', 'raise', 3], ['BB', 'raise', 9]], raiseTo: 22 },
+    BTN3b_vs_CO4b: { hero: 'BTN', ev: [['CO', 'raise', 2.5], ['BTN', 'raise', 7.5], ['CO', 'raise', 19]], raiseTo: 100 },
+    SB3b_vs_BTN4b: { hero: 'SB', ev: [['BTN', 'raise', 2.5], ['SB', 'raise', 11], ['BTN', 'raise', 24]], raiseTo: 100 },
+    BB3b_vs_BTN4b: { hero: 'BB', ev: [['BTN', 'raise', 2.5], ['BB', 'raise', 11], ['BTN', 'raise', 24]], raiseTo: 100 },
+    SB_PF: { hero: 'SB', ev: [], hu: true },
+    BB_vs_SB_PF: { hero: 'BB', ev: [['SB', 'allin', 'S']], hu: true },
+  };
+  const RAISE_NAME = ['オープン', '3ベット', '4ベット', '5ベット'];
+  const SKIN = ['#f2c9a0', '#d9a273', '#8d5a3b', '#f5d6b8', '#c68b59', '#e8b48a'];
+  const SHIRT = { UTG: '#7c66dc', HJ: '#e0803c', CO: '#3c9ee0', BTN: '#d6409f', SB: '#8a9a3c', BB: '#40b0a0' };
+  function personSVG(pos, i) {
+    return `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" class="pk-av-bg"/>
+      <circle cx="24" cy="19" r="8" fill="${SKIN[i % SKIN.length]}"/>
+      <path d="M16 17c0-6 3.5-9 8-9s8 3 8 9c-2-2.5-5-3.5-8-3.5s-6 1-8 3.5z" fill="#3a2a20"/>
+      <path d="M9 44c1.5-9 8-14 15-14s13.5 5 15 14" fill="${SHIRT[pos]}"/></svg>`;
+  }
+  // 各席の状態を作る
+  function tableState(sc, stack) {
+    const spot = SPOTS[sc.id];
+    const seats = spot.hu ? ['SB', 'BB'] : ORDER;
+    const total = spot.hu ? stack : 100;
+    const st = {};
+    for (const p of seats) st[p] = { bet: p === 'SB' ? 0.5 : p === 'BB' ? 1 : 0, bubble: '', state: 'waiting' };
+    if (!spot.hu) { st.SB.bubble = 'ブラインド'; st.BB.bubble = 'ブラインド'; }
+    let raises = 0;
+    const story = [];
+    for (const [p, act, amt] of spot.ev) {
+      const a = amt === 'S' ? stack : amt;
+      st[p].bet = a; st[p].state = 'in';
+      if (act === 'allin') { st[p].bubble = `オールイン ${a}bb`; story.push(`${p} が ${a}bb でオールイン`); }
+      else { const nm = RAISE_NAME[raises++]; st[p].bubble = `${nm} ${a}bb`; story.push(`${p} が ${a}bb に${nm}`); }
+    }
+    const heroActed = spot.ev.some(e => e[0] === spot.hero);
+    const hi = seats.indexOf(spot.hero), folded = [];
+    seats.forEach((p, i) => {
+      if (p === spot.hero) { st[p].state = 'hero'; return; }
+      if (spot.ev.some(e => e[0] === p)) return;
+      if (heroActed || i < hi || spot.hu) {
+        if (!spot.hu) { st[p].state = 'folded'; st[p].bubble = 'フォールド'; folded.push(p); }
+      }
+    });
+    for (const p of seats) st[p].stack = Math.max(0, total - st[p].bet);
+    const pot = seats.reduce((a, p) => a + st[p].bet, 0);
+    return { spot, seats, st, pot, story, folded };
+  }
+  function renderTable(sc, hand, suits, stack) {
+    const T = tableState(sc, stack);
+    const n = T.seats.length, hi = T.seats.indexOf(T.spot.hero);
+    // 自分を下中央に置き、時計回り（左回り）に並べる
+    // [x%, y%, 基準] 下の席は下端、上の席は上端を基準に置く（テーブルからはみ出さないように）
+    const SLOTS6 = [[50, 100, 'bottom'], [8, 64, 'center'], [11, 2, 'top'], [50, 0, 'top'], [89, 2, 'top'], [92, 64, 'center']];
+    const SLOTS2 = [[50, 100, 'bottom'], [50, 0, 'top']];
+    const slots = n === 2 ? SLOTS2 : SLOTS6;
+    let html = '';
+    for (let k = 0; k < n; k++) {
+      const p = T.seats[(hi + k) % n], s = T.st[p], [x, y, anchor] = slots[k];
+      const vy = anchor === 'top' ? y + 14 : anchor === 'bottom' ? y - 16 : y; // 席の見た目の中心
+      const isHero = s.state === 'hero';
+      const cards = isHero
+        ? `<div class="pk-hero-cards">${cardHTML(hand[0], suits[0])}${cardHTML(hand[1], suits[1])}</div>`
+        : s.state !== 'folded' ? '<div class="pk-backs"><i></i><i></i></div>' : '';
+      const bubble = isHero ? '<div class="pk-bubble hero">あなたの番</div>' : s.bubble ? `<div class="pk-bubble ${s.state}">${s.bubble}</div>` : '';
+      html += `<div class="pk-seat ${s.state} anchor-${anchor} ${k === 0 ? 'bottom' : ''}" style="left:${x}%;top:${y}%">
+        ${k === 0 ? cards + bubble : bubble + cards}
+        <div class="pk-person">${personSVG(p, ORDER.indexOf(p))}</div>
+        <div class="pk-name">${isHero ? 'あなた・' : ''}${p}</div>
+        <div class="pk-stack">${+s.stack.toFixed(1)}bb</div>
+      </div>`;
+      if (s.bet > 0) { // ベットのチップ（席と中央の間）
+        let cx = x + (50 - x) * 0.42, cy = vy + (48 - vy) * 0.42;
+        if (k === 0) { cx = 50 - 17; cy = 68; } // 自分のチップは手札の左に
+        html += `<div class="pk-chip" style="left:${cx}%;top:${cy}%"><i></i>${+s.bet.toFixed(1)}</div>`;
+      }
+      if (p === 'BTN' || (n === 2 && p === 'SB')) {
+        const dx = k === 0 ? 50 + 17 : x + (50 - x) * 0.22 + 7, dy = k === 0 ? 68 : vy + (48 - vy) * 0.22;
+        html += `<div class="pk-dealer" style="left:${dx}%;top:${dy}%" title="ディーラーボタン">D</div>`;
+      }
+    }
+    $('pkSeats').innerHTML = html;
+    $('pkPot').innerHTML = `ポット <b>${+T.pot.toFixed(1)}bb</b>`;
+    $('pkTable').classList.toggle('hu', n === 2);
+    return T;
+  }
+  // ボタンの説明（何をするアクションか）
+  function actionHelp(sc, a, T, stack) {
+    const spot = T.spot;
+    if (a === 'fold') return 'このハンドを降りる';
+    if (spot.hu) return a === 'raise' ? `${stack}bb 全部を賭ける` : `${stack}bb のオールインに付いていく`;
+    const facing = Math.max(...T.seats.map(p => T.st[p].bet));
+    if (a === 'call') return `${facing}bb に合わせて参加`;
+    if (spot.raiseTo >= 100) return '100bb 全部を賭ける';
+    return `${spot.raiseTo}bb にレイズ`;
+  }
+  // コーチの状況説明
+  function situationText(sc, T, hand) {
+    const spot = T.spot, me = spot.hero;
+    const handTxt = `<b>${hand}</b>`;
+    if (spot.hu) {
+      return spot.ev.length
+        ? `ヘッズアップ（2人だけ）で、スタックは ${sc.stack}bb。相手の SB が <b>${sc.stack}bb 全部を賭けて（オールイン）</b>きました。あなたは BB で手札は ${handTxt}。コールしますか、降りますか？`
+        : `ヘッズアップ（2人だけ）で、スタックは ${sc.stack}bb。あなたは SB で手札は ${handTxt}。<b>全部賭ける（オールイン）か、降りるか</b>の2択です。`;
+    }
+    const parts = [];
+    if (T.folded.length) parts.push(`${T.folded.join('・')} はフォールドしました`);
+    parts.push(...T.story);
+    const intro = parts.length ? parts.join('。') + '。' : 'あなたが一番最初に行動します。';
+    let q;
+    if (!spot.ev.length) q = `${parts.length ? `あなたは <b>${POS_JA[me]}</b> で、` : `ポジションは <b>${POS_JA[me]}</b>。`}まだ誰も参加していません。手札 ${handTxt} で<b>最初にレイズして参加するか</b>決めましょう。`;
+    else if (spot.ev.length === 1) q = `あなたは <b>${POS_JA[me]}</b>。手札 ${handTxt} で、レイズ（3ベット）・コール・フォールドのどれにしますか？`;
+    else if (spot.ev.length === 2) q = `あなたが最初にレイズしたら、<b>さらにレイズ（3ベット）</b>されました。手札 ${handTxt} でどうしますか？`;
+    else q = `あなたの3ベットに、<b>さらにレイズ（4ベット）</b>が返ってきました。手札 ${handTxt} でどうしますか？`;
+    return intro + '<br>' + q;
+  }
+  // コーチの解説（回答後）
+  function coachFeedback(sc, hand, action, s, cls) {
+    const acts = sc.actions.filter(a => s[a] > 0);
+    const mix = acts.map(a => `${label(sc, a)} ${pct(s[a])}`).join('・');
+    const best = sc.actions.reduce((x, a) => (s[a] > s[x] ? a : x), sc.actions[0]);
+    const L = a => `<b>${label(sc, a)}</b>`;
+    if (cls === 'good') {
+      return s[action] >= 0.999 ? `正解！ ${hand} はこの場面で必ず ${L(action)} するハンドです。`
+        : `正解！ ${hand} は ${mix} で使い分けるハンドで、${L(action)} が一番多い選択です。`;
+    }
+    if (cls === 'ok') return `悪くない選択です。${hand} は ${mix} で使い分けるハンドなので、${L(action)} も GTO が選ぶことがあります。一番多いのは ${L(best)} です。`;
+    let why = '';
+    if (best === 'fold') why = 'この場面で参加するには弱すぎるハンドです。';
+    else if (action === 'fold') why = '降りるのはもったいない強さのハンドです。';
+    else if (action === 'raise' && best === 'call') why = 'レイズするよりも、コールで付いていく方が得なハンドです。';
+    else if (action === 'call' && best === 'raise') why = 'コールで済ませるより、レイズして主導権を取る方が得なハンドです。';
+    return `惜しい！ ${hand} は ${L(best)} が正解です（GTO: ${mix}）。${why}`;
+  }
+
   function newHand() {
     const sel = $('trainerScenario').value;
     const sc = sel === 'random' ? SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)] : byId(sel);
@@ -137,13 +284,15 @@
     const hand = pickHand(sc);
     const suits = suitsFor(hand);
     current = { sc, hand, answered: false, strategy: sc.strategy, ev: sc.ev, name: sc.name + (sc.pushfold ? ` ${sc.stack}bb` : '') };
-    $('spotName').innerHTML = sc.name + (sc.desc ? `<div class="spot-desc">${sc.desc}</div>` : '');
-    $('heroCards').innerHTML = cardHTML(hand[0], suits[0]) + cardHTML(hand[1], suits[1]);
+    $('spotName').innerHTML = `<span class="muted small">シナリオ</span> ${current.name}`;
+    const T = renderTable(sc, hand, suits, sc.stack);
+    current.T = T;
+    $('coachMsg').innerHTML = situationText(sc, T, hand);
     $('actionButtons').innerHTML = '';
     sc.actions.forEach((a, k) => {
       const b = document.createElement('button');
       b.className = a; b.dataset.action = a;
-      b.textContent = `${label(sc, a)} (${k + 1})`;
+      b.innerHTML = `<span class="pk-act-name">${label(sc, a)} <kbd>${k + 1}</kbd></span><span class="pk-act-help">${actionHelp(sc, a, T, sc.stack)}</span>`;
       b.addEventListener('click', () => answer(a));
       $('actionButtons').append(b);
     });
@@ -173,7 +322,8 @@
     document.querySelectorAll('#actionButtons button').forEach(b => {
       b.disabled = true; if (b.dataset.action === action) b.classList.add('chosen');
     });
-    $('feedback').innerHTML = `<div class="verdict ${cls}">${verdict}</div>
+    $('coachMsg').innerHTML = `<div class="verdict ${cls}">${verdict}</div>${coachFeedback(current.sc, current.hand, action, s, cls)}`;
+    $('feedback').innerHTML = `<div class="muted small">GTO の頻度</div>
       ${freqBar(s)}
       ${current.sc.actions.map(a => `<div class="freq-row"><span>${label(current.sc, a)}</span><b>${pct(s[a])}</b></div>`).join('')}
       ${evNote(current.sc, current.ev && current.ev[current.hand])}`;
