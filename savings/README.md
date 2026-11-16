@@ -42,6 +42,6 @@
 ホーム画面に追加して使うには、HTTPSで公開する必要があります。`.github/workflows/pages.yml` で `savings/` を GitHub Pages に公開できます。
 
 1. GitHub の Settings → Pages → Source を「GitHub Actions」にする
-2. `main` ブランチにマージする（または Actions タブから手動実行）
+2. デフォルトブランチ（`claude/simple-todo-webapp-ynnavt`）にマージする（または Actions タブから手動実行）
 
 非公開リポジトリで GitHub Pages を使うには有料プランが必要です。無料で済ませたい場合は、リポジトリを公開にするか、Netlify や Cloudflare Pages に `savings/` フォルダを置いてください。

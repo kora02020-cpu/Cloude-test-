@@ -2,7 +2,7 @@ name: Deploy savings app to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [claude/simple-todo-webapp-ynnavt]
     paths: ["savings/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
