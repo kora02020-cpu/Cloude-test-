@@ -83,15 +83,24 @@
       <label>シチュエーション <select id="hpSpot"><option value="random">ランダム</option></select></label>
       <button id="hpReset" class="ghost">成績リセット</button>
     </div>
-    <div class="table hp-table">
-      <div class="hp-seat"><div id="hpVillSeat" class="seat"></div><div id="hpVillCards" class="cards"></div></div>
-      <div class="hp-middle"><div id="hpBoard" class="cards board"></div><div id="hpPot" class="pot"></div></div>
-      <div class="hp-seat"><div id="hpHeroCards" class="cards"></div><div id="hpHeroSeat" class="seat"></div></div>
-      <div id="hpStreet" class="spot"></div>
-      <div id="hpActions" class="actions"></div>
-      <div id="hpFeedback" class="feedback"></div>
-      <button id="hpNext" class="primary" hidden></button>
+    <div id="hpTitle" class="pk-title"></div>
+    <div class="pk-wrap">
+      <div class="pk-table hp" id="hpTable">
+        <div class="pk-felt"></div>
+        <div class="pk-center"><div id="hpBoard" class="cards board"></div><div id="hpPot" class="pk-pot static"></div></div>
+        <div id="hpSeats"></div>
+      </div>
     </div>
+    <div class="coach">
+      <div class="coach-face" id="hpCoachFace" aria-hidden="true"></div>
+      <div class="coach-bubble"><div class="coach-name">コーチ</div><div id="hpCoachMsg"></div></div>
+    </div>
+    <div id="hpActions" class="actions pk-actions"></div>
+    <div class="pk-next"><button id="hpNext" class="primary" hidden></button></div>
+    <details id="hpDetails" class="hp-details" hidden>
+      <summary>くわしい数字を見る</summary>
+      <div id="hpFeedback" class="feedback"></div>
+    </details>
     <div class="scoreboard">
       <div><b id="hpHands">0</b><span>ハンド数</span></div>
       <div><b id="hpDec">0</b><span>判断数</span></div>
@@ -194,6 +203,7 @@
 <script src="js/ranges.js"></script>
 <script src="js/equity-data.js"></script>
 <script src="js/pushfold.js"></script>
+<script src="js/table-ui.js"></script>
 <script src="js/app.js"></script>
 <script src="js/handplay.js"></script>
 <script src="js/solver.js"></script>

@@ -131,7 +131,7 @@
   }
 
   // ---------- テーブル表示（座席・人・チップ） ----------
-  const ORDER = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];   // プリフロップの行動順
+  const ORDER = TableUI.ORDER;
   const POS_JA = { UTG: 'UTG', HJ: 'HJ', CO: 'CO', BTN: 'BTN (ボタン)', SB: 'SB (スモールブラインド)', BB: 'BB (ビッグブラインド)' };
   // シナリオごとの「ここまでの流れ」。ev = [座席, 行動, 合計ベット額]
   const SPOTS = {
@@ -153,14 +153,6 @@
     BB_vs_SB_PF: { hero: 'BB', ev: [['SB', 'allin', 'S']], hu: true },
   };
   const RAISE_NAME = ['オープン', '3ベット', '4ベット', '5ベット'];
-  const SKIN = ['#f2c9a0', '#d9a273', '#8d5a3b', '#f5d6b8', '#c68b59', '#e8b48a'];
-  const SHIRT = { UTG: '#7c66dc', HJ: '#e0803c', CO: '#3c9ee0', BTN: '#d6409f', SB: '#8a9a3c', BB: '#40b0a0' };
-  function personSVG(pos, i) {
-    return `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" class="pk-av-bg"/>
-      <circle cx="24" cy="19" r="8" fill="${SKIN[i % SKIN.length]}"/>
-      <path d="M16 17c0-6 3.5-9 8-9s8 3 8 9c-2-2.5-5-3.5-8-3.5s-6 1-8 3.5z" fill="#3a2a20"/>
-      <path d="M9 44c1.5-9 8-14 15-14s13.5 5 15 14" fill="${SHIRT[pos]}"/></svg>`;
-  }
   // 各席の状態を作る
   function tableState(sc, stack) {
     const spot = SPOTS[sc.id];
@@ -192,38 +184,15 @@
   }
   function renderTable(sc, hand, suits, stack) {
     const T = tableState(sc, stack);
-    const n = T.seats.length, hi = T.seats.indexOf(T.spot.hero);
-    // 自分を下中央に置き、時計回り（左回り）に並べる
-    // [x%, y%, 基準] 下の席は下端、上の席は上端を基準に置く（テーブルからはみ出さないように）
-    const SLOTS6 = [[50, 100, 'bottom'], [8, 64, 'center'], [11, 2, 'top'], [50, 0, 'top'], [89, 2, 'top'], [92, 64, 'center']];
-    const SLOTS2 = [[50, 100, 'bottom'], [50, 0, 'top']];
-    const slots = n === 2 ? SLOTS2 : SLOTS6;
-    let html = '';
-    for (let k = 0; k < n; k++) {
-      const p = T.seats[(hi + k) % n], s = T.st[p], [x, y, anchor] = slots[k];
-      const vy = anchor === 'top' ? y + 14 : anchor === 'bottom' ? y - 16 : y; // 席の見た目の中心
-      const isHero = s.state === 'hero';
-      const cards = isHero
-        ? `<div class="pk-hero-cards">${cardHTML(hand[0], suits[0])}${cardHTML(hand[1], suits[1])}</div>`
-        : s.state !== 'folded' ? '<div class="pk-backs"><i></i><i></i></div>' : '';
-      const bubble = isHero ? '<div class="pk-bubble hero">あなたの番</div>' : s.bubble ? `<div class="pk-bubble ${s.state}">${s.bubble}</div>` : '';
-      html += `<div class="pk-seat ${s.state} anchor-${anchor} ${k === 0 ? 'bottom' : ''}" style="left:${x}%;top:${y}%">
-        ${k === 0 ? cards + bubble : bubble + cards}
-        <div class="pk-person">${personSVG(p, ORDER.indexOf(p))}</div>
-        <div class="pk-name">${isHero ? 'あなた・' : ''}${p}</div>
-        <div class="pk-stack">${+s.stack.toFixed(1)}bb</div>
-      </div>`;
-      if (s.bet > 0) { // ベットのチップ（席と中央の間）
-        let cx = x + (50 - x) * 0.42, cy = vy + (48 - vy) * 0.42;
-        if (k === 0) { cx = 50 - 17; cy = 68; } // 自分のチップは手札の左に
-        html += `<div class="pk-chip" style="left:${cx}%;top:${cy}%"><i></i>${+s.bet.toFixed(1)}</div>`;
-      }
-      if (p === 'BTN' || (n === 2 && p === 'SB')) {
-        const dx = k === 0 ? 50 + 17 : x + (50 - x) * 0.22 + 7, dy = k === 0 ? 68 : vy + (48 - vy) * 0.22;
-        html += `<div class="pk-dealer" style="left:${dx}%;top:${dy}%" title="ディーラーボタン">D</div>`;
-      }
-    }
-    $('pkSeats').innerHTML = html;
+    const n = T.seats.length;
+    const seats = TableUI.seatsFrom(T.spot.hero, T.seats).map(p => {
+      const s = T.st[p], isHero = s.state === 'hero';
+      return { pos: p, state: s.state, stack: s.stack, bet: s.bet, name: (isHero ? 'あなた・' : '') + p,
+        bubble: isHero ? 'あなたの番' : s.bubble,
+        cards: isHero ? `<div class="pk-hero-cards">${cardHTML(hand[0], suits[0])}${cardHTML(hand[1], suits[1])}</div>`
+          : s.state !== 'folded' ? '<div class="pk-backs"><i></i><i></i></div>' : '' };
+    });
+    TableUI.render($('pkSeats'), seats, { dealer: n === 2 ? 'SB' : 'BTN' });
     $('pkPot').innerHTML = `ポット <b>${+T.pot.toFixed(1)}bb</b>`;
     $('pkTable').classList.toggle('hu', n === 2);
     return T;
